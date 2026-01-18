@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_subscribers: {
+        Row: {
+          email: string
+          id: string
+          profile_id: string
+          subscribed_at: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          profile_id: string
+          subscribed_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          profile_id?: string
+          subscribed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_subscribers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       links: {
         Row: {
           click_count: number | null
@@ -92,6 +121,7 @@ export type Database = {
           created_at: string | null
           custom_accent_color: string | null
           custom_bg_color: string | null
+          email_collection_enabled: boolean | null
           gradient_direction: string | null
           id: string
           social_links: Json | null
@@ -108,6 +138,7 @@ export type Database = {
           created_at?: string | null
           custom_accent_color?: string | null
           custom_bg_color?: string | null
+          email_collection_enabled?: boolean | null
           gradient_direction?: string | null
           id?: string
           social_links?: Json | null
@@ -124,6 +155,7 @@ export type Database = {
           created_at?: string | null
           custom_accent_color?: string | null
           custom_bg_color?: string | null
+          email_collection_enabled?: boolean | null
           gradient_direction?: string | null
           id?: string
           social_links?: Json | null

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { SocialIcons } from "@/components/profile/SocialIcons";
+import { EmailSignup } from "@/components/profile/EmailSignup";
 
 interface SocialLinks {
   instagram?: string;
@@ -27,6 +28,7 @@ interface Profile {
   custom_bg_color: string | null;
   custom_accent_color: string | null;
   gradient_direction: string;
+  email_collection_enabled: boolean;
 }
 
 interface LinkItem {
@@ -216,6 +218,18 @@ export default function PublicProfile() {
             </motion.button>
           ))}
         </div>
+
+        {/* Email Signup */}
+        {profile.email_collection_enabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-6"
+          >
+            <EmailSignup profileId={profile.id} />
+          </motion.div>
+        )}
 
         {/* Footer */}
         <motion.div
