@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 import { SocialIcons } from "@/components/profile/SocialIcons";
 import { EmailSignup } from "@/components/profile/EmailSignup";
 import { parseUserAgent } from "@/lib/userAgentParser";
@@ -41,6 +41,7 @@ interface LinkItem {
   scheduled_start: string | null;
   scheduled_end: string | null;
   group_id: string | null;
+  is_featured: boolean;
 }
 
 interface LinkGroup {
@@ -250,10 +251,42 @@ export default function PublicProfile() {
 
         {/* Links */}
         <div className="space-y-6">
-          {/* Ungrouped Links */}
-          {links.filter(l => !l.group_id).length > 0 && (
+          {/* Featured Links - Always at top with special styling */}
+          {links.filter(l => l.is_featured).length > 0 && (
+            <div className="space-y-3">
+              <p className="text-primary-foreground/60 text-xs font-semibold uppercase tracking-wider text-center flex items-center justify-center gap-2">
+                <Star className="w-3 h-3 fill-current" />
+                Featured
+              </p>
+              {links.filter(l => l.is_featured).map((link, index) => (
+                <motion.button
+                  key={link.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => handleLinkClick(link.id, link.url)}
+                  className="w-full flex items-center gap-4 py-5 px-6 rounded-2xl bg-primary-foreground/30 backdrop-blur border border-primary-foreground/20 hover:bg-primary-foreground/40 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
+                >
+                  {link.thumbnail_url && (
+                    <img 
+                      src={link.thumbnail_url} 
+                      alt="" 
+                      className="w-12 h-12 rounded-xl object-cover flex-shrink-0 ring-2 ring-primary-foreground/30" 
+                    />
+                  )}
+                  <span className="flex-1 text-primary-foreground font-bold text-center text-lg">
+                    {link.title}
+                  </span>
+                  {link.thumbnail_url && <div className="w-12" />}
+                </motion.button>
+              ))}
+            </div>
+          )}
+
+          {/* Ungrouped Links (non-featured) */}
+          {links.filter(l => !l.group_id && !l.is_featured).length > 0 && (
             <div className="space-y-4">
-              {links.filter(l => !l.group_id).map((link, index) => (
+              {links.filter(l => !l.group_id && !l.is_featured).map((link, index) => (
                 <motion.button
                   key={link.id}
                   initial={{ opacity: 0, y: 20 }}

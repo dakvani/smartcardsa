@@ -130,6 +130,7 @@ export type Database = {
           created_at: string | null
           group_id: string | null
           id: string
+          is_featured: boolean | null
           position: number
           scheduled_end: string | null
           scheduled_start: string | null
@@ -145,6 +146,7 @@ export type Database = {
           created_at?: string | null
           group_id?: string | null
           id?: string
+          is_featured?: boolean | null
           position?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           created_at?: string | null
           group_id?: string | null
           id?: string
+          is_featured?: boolean | null
           position?: number
           scheduled_end?: string | null
           scheduled_start?: string | null
