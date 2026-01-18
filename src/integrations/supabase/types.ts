@@ -97,10 +97,38 @@ export type Database = {
           },
         ]
       }
+      link_groups: {
+        Row: {
+          created_at: string
+          id: string
+          is_collapsed: boolean | null
+          name: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_collapsed?: boolean | null
+          name: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_collapsed?: boolean | null
+          name?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       links: {
         Row: {
           click_count: number | null
           created_at: string | null
+          group_id: string | null
           id: string
           position: number
           scheduled_end: string | null
@@ -115,6 +143,7 @@ export type Database = {
         Insert: {
           click_count?: number | null
           created_at?: string | null
+          group_id?: string | null
           id?: string
           position?: number
           scheduled_end?: string | null
@@ -129,6 +158,7 @@ export type Database = {
         Update: {
           click_count?: number | null
           created_at?: string | null
+          group_id?: string | null
           id?: string
           position?: number
           scheduled_end?: string | null
@@ -140,7 +170,15 @@ export type Database = {
           user_id?: string
           visible?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "links_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "link_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profile_templates: {
         Row: {
