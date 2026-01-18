@@ -40,6 +40,13 @@ interface LinkItem {
   thumbnail_url: string | null;
   scheduled_start: string | null;
   scheduled_end: string | null;
+  group_id: string | null;
+}
+
+interface LinkGroup {
+  id: string;
+  name: string;
+  position: number;
 }
 
 // Check if link is currently active based on schedule
@@ -58,6 +65,7 @@ export default function PublicProfile() {
   const { username } = useParams<{ username: string }>();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [links, setLinks] = useState<LinkItem[]>([]);
+  const [groups, setGroups] = useState<LinkGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -110,6 +118,18 @@ export default function PublicProfile() {
         // Filter to only show active links based on schedule
         const activeLinks = (linksData || []).filter(isLinkActive);
         setLinks(activeLinks);
+
+        // Fetch groups for visible links
+        const groupIds = [...new Set(activeLinks.filter(l => l.group_id).map(l => l.group_id))];
+        if (groupIds.length > 0) {
+          const { data: groupsData } = await supabase
+            .from("link_groups")
+            .select("id, name, position")
+            .in("id", groupIds)
+            .order("position", { ascending: true });
+          
+          setGroups(groupsData || []);
+        }
       } catch (error) {
         console.error("Error loading profile:", error);
         setNotFound(true);
@@ -229,29 +249,77 @@ export default function PublicProfile() {
         </motion.div>
 
         {/* Links */}
-        <div className="space-y-4">
-          {links.map((link, index) => (
-            <motion.button
-              key={link.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              onClick={() => handleLinkClick(link.id, link.url)}
-              className="w-full flex items-center gap-4 py-4 px-6 rounded-2xl bg-primary-foreground/20 backdrop-blur hover:bg-primary-foreground/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
-            >
-              {link.thumbnail_url && (
-                <img 
-                  src={link.thumbnail_url} 
-                  alt="" 
-                  className="w-10 h-10 rounded-xl object-cover flex-shrink-0" 
-                />
-              )}
-              <span className="flex-1 text-primary-foreground font-semibold text-center">
-                {link.title}
-              </span>
-              {link.thumbnail_url && <div className="w-10" />}
-            </motion.button>
-          ))}
+        <div className="space-y-6">
+          {/* Ungrouped Links */}
+          {links.filter(l => !l.group_id).length > 0 && (
+            <div className="space-y-4">
+              {links.filter(l => !l.group_id).map((link, index) => (
+                <motion.button
+                  key={link.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  onClick={() => handleLinkClick(link.id, link.url)}
+                  className="w-full flex items-center gap-4 py-4 px-6 rounded-2xl bg-primary-foreground/20 backdrop-blur hover:bg-primary-foreground/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  {link.thumbnail_url && (
+                    <img 
+                      src={link.thumbnail_url} 
+                      alt="" 
+                      className="w-10 h-10 rounded-xl object-cover flex-shrink-0" 
+                    />
+                  )}
+                  <span className="flex-1 text-primary-foreground font-semibold text-center">
+                    {link.title}
+                  </span>
+                  {link.thumbnail_url && <div className="w-10" />}
+                </motion.button>
+              ))}
+            </div>
+          )}
+
+          {/* Grouped Links */}
+          {groups.map((group, groupIndex) => {
+            const groupLinks = links.filter(l => l.group_id === group.id);
+            if (groupLinks.length === 0) return null;
+            
+            return (
+              <motion.div
+                key={group.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + groupIndex * 0.1 }}
+              >
+                <p className="text-primary-foreground/60 text-sm font-medium mb-3 text-center">
+                  {group.name}
+                </p>
+                <div className="space-y-3">
+                  {groupLinks.map((link, index) => (
+                    <motion.button
+                      key={link.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + index * 0.05 }}
+                      onClick={() => handleLinkClick(link.id, link.url)}
+                      className="w-full flex items-center gap-4 py-4 px-6 rounded-2xl bg-primary-foreground/20 backdrop-blur hover:bg-primary-foreground/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      {link.thumbnail_url && (
+                        <img 
+                          src={link.thumbnail_url} 
+                          alt="" 
+                          className="w-10 h-10 rounded-xl object-cover flex-shrink-0" 
+                        />
+                      )}
+                      <span className="flex-1 text-primary-foreground font-semibold text-center">
+                        {link.title}
+                      </span>
+                      {link.thumbnail_url && <div className="w-10" />}
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Email Signup */}

@@ -5,6 +5,13 @@ import { GripVertical, Eye, EyeOff, Trash2, BarChart3 } from "lucide-react";
 import { LinkThumbnailUpload } from "./LinkThumbnailUpload";
 import { LinkScheduler } from "./LinkScheduler";
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface LinkGroup {
+  id: string;
+  name: string;
+}
+
 interface LinkItem {
   id: string;
   user_id: string;
@@ -15,15 +22,17 @@ interface LinkItem {
   thumbnail_url?: string | null;
   scheduled_start?: string | null;
   scheduled_end?: string | null;
+  group_id?: string | null;
 }
 
 interface SortableLinkItemProps {
   link: LinkItem;
   onUpdate: (id: string, updates: Partial<LinkItem>) => void;
   onDelete: (id: string) => void;
+  groups?: LinkGroup[];
 }
 
-export function SortableLinkItem({ link, onUpdate, onDelete }: SortableLinkItemProps) {
+export function SortableLinkItem({ link, onUpdate, onDelete, groups = [] }: SortableLinkItemProps) {
   const {
     attributes,
     listeners,
@@ -79,7 +88,7 @@ export function SortableLinkItem({ link, onUpdate, onDelete }: SortableLinkItemP
             placeholder="https://..."
             className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
           />
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <BarChart3 className="w-3 h-3" />
               <span>{link.click_count} clicks</span>
@@ -89,6 +98,24 @@ export function SortableLinkItem({ link, onUpdate, onDelete }: SortableLinkItemP
               scheduledEnd={link.scheduled_end || null}
               onUpdate={(start, end) => onUpdate(link.id, { scheduled_start: start, scheduled_end: end })}
             />
+            {groups.length > 0 && (
+              <Select
+                value={link.group_id || "none"}
+                onValueChange={(value) => onUpdate(link.id, { group_id: value === "none" ? null : value })}
+              >
+                <SelectTrigger className="h-7 w-[130px] text-xs">
+                  <SelectValue placeholder="No group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No group</SelectItem>
+                  {groups.map(group => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
         <button

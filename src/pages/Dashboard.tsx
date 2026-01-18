@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy 
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { Plus, ExternalLink, LogOut, BarChart3, Palette, Settings, Link2, Loader2, Copy, Check } from "lucide-react";
+import { Plus, ExternalLink, LogOut, BarChart3, Palette, Settings, Link2, Loader2, Copy, Check, Folder } from "lucide-react";
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
 import { AvatarUpload } from "@/components/dashboard/AvatarUpload";
@@ -31,6 +31,8 @@ import { ThemeCustomizer } from "@/components/dashboard/ThemeCustomizer";
 import { QRCodeGenerator } from "@/components/dashboard/QRCodeGenerator";
 import { EmailSubscribers } from "@/components/dashboard/EmailSubscribers";
 import { ProfileTemplates } from "@/components/dashboard/ProfileTemplates";
+import { LinkGroupManager, LinkGroup } from "@/components/dashboard/LinkGroupManager";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Profile {
   id: string;
@@ -59,6 +61,7 @@ interface LinkItem {
   thumbnail_url: string | null;
   scheduled_start: string | null;
   scheduled_end: string | null;
+  group_id: string | null;
 }
 
 const tabs = [
@@ -87,6 +90,7 @@ export default function Dashboard() {
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [links, setLinks] = useState<LinkItem[]>([]);
+  const [groups, setGroups] = useState<LinkGroup[]>([]);
   const [analytics, setAnalytics] = useState({ views: 0, clicks: 0 });
 
   // DnD sensors
@@ -122,6 +126,16 @@ export default function Dashboard() {
 
       if (linksError) throw linksError;
       setLinks(linksData || []);
+
+      // Load groups
+      const { data: groupsData, error: groupsError } = await supabase
+        .from("link_groups")
+        .select("*")
+        .eq("user_id", userId)
+        .order("position", { ascending: true });
+
+      if (groupsError) throw groupsError;
+      setGroups(groupsData || []);
 
       // Load analytics
       if (profileData) {
@@ -252,6 +266,61 @@ export default function Dashboard() {
     toast.success("Link deleted!");
   };
 
+  // Group operations
+  const addGroup = async (name: string) => {
+    if (!user) return;
+    
+    const newPosition = groups.length;
+    const { data, error } = await supabase
+      .from("link_groups")
+      .insert({
+        user_id: user.id,
+        name,
+        position: newPosition,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error("Failed to add group: " + error.message);
+      return;
+    }
+
+    setGroups([...groups, data]);
+    toast.success("Group created!");
+  };
+
+  const updateGroup = async (id: string, updates: Partial<LinkGroup>) => {
+    const { error } = await supabase
+      .from("link_groups")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Failed to update group");
+      return;
+    }
+
+    setGroups(groups.map(g => g.id === id ? { ...g, ...updates } : g));
+  };
+
+  const deleteGroup = async (id: string) => {
+    const { error } = await supabase
+      .from("link_groups")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Failed to delete group");
+      return;
+    }
+
+    // Clear group_id from links that were in this group
+    setLinks(links.map(l => l.group_id === id ? { ...l, group_id: null } : l));
+    setGroups(groups.filter(g => g.id !== id));
+    toast.success("Group deleted!");
+  };
+
   // Drag and drop handler
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -367,10 +436,20 @@ export default function Dashboard() {
             {/* Tab Content */}
             <div className="bg-background rounded-2xl border border-border p-6">
               {activeTab === "links" && (
-                <div className="space-y-4">
-                  <Button onClick={addLink} variant="gradient" className="w-full">
-                    <Plus className="w-5 h-5" /> Add New Link
-                  </Button>
+                <div className="space-y-6">
+                  {/* Group Manager */}
+                  <LinkGroupManager
+                    groups={groups}
+                    onAddGroup={addGroup}
+                    onUpdateGroup={updateGroup}
+                    onDeleteGroup={deleteGroup}
+                  />
+
+                  <div className="border-t border-border pt-6">
+                    <Button onClick={addLink} variant="gradient" className="w-full">
+                      <Plus className="w-5 h-5" /> Add New Link
+                    </Button>
+                  </div>
                   
                   {links.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
@@ -378,25 +457,85 @@ export default function Dashboard() {
                       <p>No links yet. Add your first link above!</p>
                     </div>
                   ) : (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
-                      modifiers={[restrictToVerticalAxis]}
-                    >
-                      <SortableContext items={links.map(l => l.id)} strategy={verticalListSortingStrategy}>
-                        <div className="space-y-4">
-                          {links.map(link => (
-                            <SortableLinkItem
-                              key={link.id}
-                              link={link}
-                              onUpdate={updateLink}
-                              onDelete={deleteLink}
-                            />
-                          ))}
+                    <div className="space-y-6">
+                      {/* Ungrouped Links */}
+                      {links.filter(l => !l.group_id).length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                            <Link2 className="w-4 h-4" />
+                            Ungrouped Links
+                          </p>
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                            modifiers={[restrictToVerticalAxis]}
+                          >
+                            <SortableContext 
+                              items={links.filter(l => !l.group_id).map(l => l.id)} 
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="space-y-3">
+                                {links.filter(l => !l.group_id).map(link => (
+                                  <SortableLinkItem
+                                    key={link.id}
+                                    link={link}
+                                    onUpdate={updateLink}
+                                    onDelete={deleteLink}
+                                    groups={groups}
+                                  />
+                                ))}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
                         </div>
-                      </SortableContext>
-                    </DndContext>
+                      )}
+
+                      {/* Grouped Links */}
+                      {groups.map(group => {
+                        const groupLinks = links.filter(l => l.group_id === group.id);
+                        if (groupLinks.length === 0 && !group.is_collapsed) return null;
+                        
+                        return (
+                          <div key={group.id}>
+                            <button
+                              onClick={() => updateGroup(group.id, { is_collapsed: !group.is_collapsed })}
+                              className="w-full flex items-center gap-2 text-sm font-medium mb-3 hover:text-primary transition-colors"
+                            >
+                              <Folder className="w-4 h-4 text-primary" />
+                              <span>{group.name}</span>
+                              <span className="text-xs text-muted-foreground">({groupLinks.length})</span>
+                            </button>
+                            
+                            {!group.is_collapsed && groupLinks.length > 0 && (
+                              <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                                modifiers={[restrictToVerticalAxis]}
+                              >
+                                <SortableContext 
+                                  items={groupLinks.map(l => l.id)} 
+                                  strategy={verticalListSortingStrategy}
+                                >
+                                  <div className="space-y-3 ml-4 border-l-2 border-primary/20 pl-4">
+                                    {groupLinks.map(link => (
+                                      <SortableLinkItem
+                                        key={link.id}
+                                        link={link}
+                                        onUpdate={updateLink}
+                                        onDelete={deleteLink}
+                                        groups={groups}
+                                      />
+                                    ))}
+                                  </div>
+                                </SortableContext>
+                              </DndContext>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               )}
