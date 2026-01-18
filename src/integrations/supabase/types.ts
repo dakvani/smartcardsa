@@ -14,7 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      links: {
+        Row: {
+          click_count: number | null
+          created_at: string | null
+          id: string
+          position: number
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          url: string | null
+          user_id: string
+          visible: boolean | null
+        }
+        Insert: {
+          click_count?: number | null
+          created_at?: string | null
+          id?: string
+          position?: number
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          url?: string | null
+          user_id: string
+          visible?: boolean | null
+        }
+        Update: {
+          click_count?: number | null
+          created_at?: string | null
+          id?: string
+          position?: number
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string
+          visible?: boolean | null
+        }
+        Relationships: []
+      }
+      profile_views: {
+        Row: {
+          id: string
+          profile_id: string
+          referrer: string | null
+          user_agent: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          referrer?: string | null
+          user_agent?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          id: string
+          theme_gradient: string | null
+          theme_name: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          theme_gradient?: string | null
+          theme_name?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          theme_gradient?: string | null
+          theme_name?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
