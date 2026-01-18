@@ -11,6 +11,7 @@ import Products from "./pages/Products";
 import Marketplace from "./pages/Marketplace";
 import Learn from "./pages/Learn";
 import Dashboard from "./pages/Dashboard";
+import PublicProfile from "./pages/PublicProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/learn" element={<Learn />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/:username" element={<PublicProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
