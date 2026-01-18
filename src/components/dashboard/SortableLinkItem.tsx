@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
-import { GripVertical, Eye, EyeOff, Trash2, BarChart3 } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Trash2, BarChart3, Star } from "lucide-react";
 import { LinkThumbnailUpload } from "./LinkThumbnailUpload";
 import { LinkScheduler } from "./LinkScheduler";
 
@@ -23,6 +23,7 @@ interface LinkItem {
   scheduled_start?: string | null;
   scheduled_end?: string | null;
   group_id?: string | null;
+  is_featured?: boolean;
 }
 
 interface SortableLinkItemProps {
@@ -54,7 +55,11 @@ export function SortableLinkItem({ link, onUpdate, onDelete, groups = [] }: Sort
       ref={setNodeRef}
       style={style}
       layout
-      className="p-4 bg-secondary/50 rounded-xl border border-border"
+      className={`p-4 rounded-xl border transition-all ${
+        link.is_featured 
+          ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20" 
+          : "bg-secondary/50 border-border"
+      }`}
     >
       <div className="flex items-start gap-3">
         <button
@@ -118,6 +123,17 @@ export function SortableLinkItem({ link, onUpdate, onDelete, groups = [] }: Sort
             )}
           </div>
         </div>
+        <button
+          onClick={() => onUpdate(link.id, { is_featured: !link.is_featured })}
+          className={`p-2 rounded-lg transition-colors ${
+            link.is_featured 
+              ? "bg-primary/20 text-primary hover:bg-primary/30" 
+              : "hover:bg-secondary text-muted-foreground hover:text-primary"
+          }`}
+          title={link.is_featured ? "Unpin link" : "Pin to top"}
+        >
+          <Star className={`w-4 h-4 ${link.is_featured ? "fill-current" : ""}`} />
+        </button>
         <button
           onClick={() => onUpdate(link.id, { visible: !link.visible })}
           className="p-2 hover:bg-secondary rounded-lg"

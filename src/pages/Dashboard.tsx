@@ -62,6 +62,7 @@ interface LinkItem {
   scheduled_start: string | null;
   scheduled_end: string | null;
   group_id: string | null;
+  is_featured: boolean;
 }
 
 const tabs = [
