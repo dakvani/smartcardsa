@@ -28,6 +28,8 @@ import { SortableLinkItem } from "@/components/dashboard/SortableLinkItem";
 import { SocialIcons } from "@/components/profile/SocialIcons";
 import { AnalyticsCharts } from "@/components/dashboard/AnalyticsCharts";
 import { ThemeCustomizer } from "@/components/dashboard/ThemeCustomizer";
+import { QRCodeGenerator } from "@/components/dashboard/QRCodeGenerator";
+import { EmailSubscribers } from "@/components/dashboard/EmailSubscribers";
 
 interface Profile {
   id: string;
@@ -42,6 +44,7 @@ interface Profile {
   custom_bg_color: string | null;
   custom_accent_color: string | null;
   gradient_direction: string;
+  email_collection_enabled: boolean;
 }
 
 interface LinkItem {
@@ -324,6 +327,7 @@ export default function Dashboard() {
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               <span className="hidden sm:inline">{copied ? "Copied!" : "Share"}</span>
             </Button>
+            <QRCodeGenerator username={profile.username} />
             <Link to={`/${profile.username}`} target="_blank">
               <Button variant="outline" size="sm">
                 <ExternalLink className="w-4 h-4" />
@@ -479,6 +483,16 @@ export default function Dashboard() {
                       />
                     </div>
                   </div>
+
+                  {/* Email Collection */}
+                  <EmailSubscribers
+                    profileId={profile.id}
+                    emailCollectionEnabled={profile.email_collection_enabled || false}
+                    onToggle={(enabled) => {
+                      setProfile({ ...profile, email_collection_enabled: enabled });
+                      updateProfile({ email_collection_enabled: enabled } as Partial<Profile>);
+                    }}
+                  />
                 </div>
               )}
             </div>
