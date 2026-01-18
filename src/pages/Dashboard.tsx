@@ -3,9 +3,29 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Plus, GripVertical, Eye, EyeOff, Trash2, ExternalLink, LogOut, BarChart3, Palette, Settings, Link2, Loader2, Copy, Check } from "lucide-react";
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragEndEvent 
+} from "@dnd-kit/core";
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  verticalListSortingStrategy 
+} from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { Plus, ExternalLink, LogOut, BarChart3, Palette, Settings, Link2, Loader2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
+import { AvatarUpload } from "@/components/dashboard/AvatarUpload";
+import { SocialLinksEditor, SocialLinks } from "@/components/dashboard/SocialLinksEditor";
+import { SortableLinkItem } from "@/components/dashboard/SortableLinkItem";
+import { SocialIcons } from "@/components/profile/SocialIcons";
 
 interface Profile {
   id: string;
@@ -16,6 +36,7 @@ interface Profile {
   avatar_url: string | null;
   theme_name: string;
   theme_gradient: string;
+  social_links: SocialLinks;
 }
 
 interface LinkItem {
@@ -56,6 +77,12 @@ export default function Dashboard() {
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [analytics, setAnalytics] = useState({ views: 0, clicks: 0 });
 
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   // Load user data
   const loadData = useCallback(async (userId: string) => {
     try {
@@ -67,7 +94,12 @@ export default function Dashboard() {
         .maybeSingle();
 
       if (profileError) throw profileError;
-      if (profileData) setProfile(profileData);
+      if (profileData) {
+        setProfile({
+          ...profileData,
+          social_links: (profileData.social_links as SocialLinks) || {},
+        });
+      }
 
       // Load links
       const { data: linksData, error: linksError } = await supabase
@@ -97,7 +129,6 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -105,12 +136,10 @@ export default function Dashboard() {
       if (!session) {
         navigate("/auth");
       } else if (session.user) {
-        // Defer data loading
         setTimeout(() => loadData(session.user.id), 0);
       }
     });
 
-    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -136,9 +165,15 @@ export default function Dashboard() {
     setSaving(true);
     
     try {
+      // Convert social_links to JSON-compatible format for Supabase
+      const dbUpdates = { ...updates } as Record<string, unknown>;
+      if (updates.social_links) {
+        dbUpdates.social_links = updates.social_links as Record<string, string>;
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update(updates)
+        .update(dbUpdates)
         .eq("id", profile.id);
 
       if (error) throw error;
@@ -203,6 +238,37 @@ export default function Dashboard() {
 
     setLinks(links.filter(l => l.id !== id));
     toast.success("Link deleted!");
+  };
+
+  // Drag and drop handler
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = links.findIndex(l => l.id === active.id);
+    const newIndex = links.findIndex(l => l.id === over.id);
+
+    const reorderedLinks = arrayMove(links, oldIndex, newIndex);
+    
+    // Update positions
+    const updatedLinks = reorderedLinks.map((link, index) => ({
+      ...link,
+      position: index,
+    }));
+
+    setLinks(updatedLinks);
+
+    // Persist to database
+    try {
+      const updates = updatedLinks.map(link => 
+        supabase.from("links").update({ position: link.position }).eq("id", link.id)
+      );
+      await Promise.all(updates);
+    } catch (error) {
+      toast.error("Failed to save order");
+      loadData(user!.id); // Reload to restore state
+    }
   };
 
   const copyProfileUrl = () => {
@@ -288,56 +354,39 @@ export default function Dashboard() {
                       <p>No links yet. Add your first link above!</p>
                     </div>
                   ) : (
-                    links.map(link => (
-                      <motion.div
-                        key={link.id}
-                        layout
-                        className="p-4 bg-secondary/50 rounded-xl border border-border"
-                      >
-                        <div className="flex items-start gap-3">
-                          <GripVertical className="w-5 h-5 text-muted-foreground mt-2 cursor-grab" />
-                          <div className="flex-1 space-y-3">
-                            <input
-                              value={link.title}
-                              onChange={(e) => updateLink(link.id, { title: e.target.value })}
-                              onBlur={(e) => updateLink(link.id, { title: e.target.value })}
-                              placeholder="Link Title"
-                              className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm font-medium"
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                      modifiers={[restrictToVerticalAxis]}
+                    >
+                      <SortableContext items={links.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-4">
+                          {links.map(link => (
+                            <SortableLinkItem
+                              key={link.id}
+                              link={link}
+                              onUpdate={updateLink}
+                              onDelete={deleteLink}
                             />
-                            <input
-                              value={link.url}
-                              onChange={(e) => updateLink(link.id, { url: e.target.value })}
-                              onBlur={(e) => updateLink(link.id, { url: e.target.value })}
-                              placeholder="https://..."
-                              className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
-                            />
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <BarChart3 className="w-3 h-3" />
-                              <span>{link.click_count} clicks</span>
-                            </div>
-                          </div>
-                          <button 
-                            onClick={() => updateLink(link.id, { visible: !link.visible })} 
-                            className="p-2 hover:bg-secondary rounded-lg"
-                            title={link.visible ? "Hide link" : "Show link"}
-                          >
-                            {link.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
-                          </button>
-                          <button 
-                            onClick={() => deleteLink(link.id)} 
-                            className="p-2 hover:bg-destructive/10 rounded-lg text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          ))}
                         </div>
-                      </motion.div>
-                    ))
+                      </SortableContext>
+                    </DndContext>
                   )}
                 </div>
               )}
 
               {activeTab === "appearance" && (
                 <div className="space-y-6">
+                  {/* Avatar Upload */}
+                  <AvatarUpload
+                    userId={user.id}
+                    currentAvatarUrl={profile.avatar_url}
+                    username={profile.username}
+                    onUpload={(url) => updateProfile({ avatar_url: url })}
+                  />
+
                   <div>
                     <label className="block text-sm font-medium mb-2">Profile Title</label>
                     <input 
@@ -360,6 +409,14 @@ export default function Dashboard() {
                     />
                     <p className="text-xs text-muted-foreground mt-1">{(profile.bio || "").length}/80 characters</p>
                   </div>
+                  
+                  {/* Social Links */}
+                  <SocialLinksEditor
+                    socialLinks={profile.social_links || {}}
+                    onChange={(links) => setProfile({ ...profile, social_links: links })}
+                    onBlur={() => updateProfile({ social_links: profile.social_links })}
+                  />
+
                   <div>
                     <label className="block text-sm font-medium mb-3">Theme</label>
                     <div className="grid grid-cols-5 gap-3">
@@ -439,46 +496,38 @@ export default function Dashboard() {
                       />
                     </div>
                   </div>
-
-                  <div className="pt-4 border-t border-border">
-                    <p className="text-sm text-muted-foreground mb-3">Account: {user.email}</p>
-                    <Button variant="outline" onClick={handleLogout}>
-                      <LogOut className="w-4 h-4" /> Sign Out
-                    </Button>
-                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Preview Panel */}
-          <div className="lg:w-[40%] flex justify-center">
-            <div className="sticky top-24">
+          <div className="lg:w-[40%] lg:sticky lg:top-24 lg:h-fit">
+            <div className="bg-background rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground text-center mb-4">Live Preview</p>
-              <div className="w-[280px] h-[580px] rounded-[40px] bg-foreground p-3 shadow-elevated">
-                <div className={`w-full h-full rounded-[32px] bg-gradient-to-b ${selectedTheme.gradient} overflow-hidden relative`}>
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-foreground rounded-b-2xl" />
-                  <div className="pt-12 px-6 text-center">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-primary-foreground/20 backdrop-blur mb-4 flex items-center justify-center">
-                      {profile.avatar_url ? (
-                        <img src={profile.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        <span className="text-2xl font-bold text-primary-foreground">{profile.username[0]?.toUpperCase()}</span>
-                      )}
-                    </div>
-                    <h3 className="text-primary-foreground font-bold text-lg">{profile.title}</h3>
-                    <p className="text-primary-foreground/70 text-sm mt-1">{profile.bio}</p>
-                    <div className="mt-6 space-y-3 max-h-[320px] overflow-y-auto">
-                      {links.filter(l => l.visible).map(link => (
-                        <div 
-                          key={link.id} 
-                          className="w-full py-3 px-4 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground text-sm font-medium truncate"
-                        >
-                          {link.title || "Untitled"}
-                        </div>
-                      ))}
-                    </div>
+              <div className={`rounded-[2rem] bg-gradient-to-b ${selectedTheme.gradient} p-6 min-h-[600px] overflow-hidden`}>
+                <div className="text-center mb-6">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-primary-foreground/20 backdrop-blur mb-3 flex items-center justify-center overflow-hidden">
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt={profile.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl font-bold text-primary-foreground">
+                        {profile.username[0]?.toUpperCase()}
+                      </span>
+                    )}
                   </div>
+                  <h2 className="text-lg font-bold text-primary-foreground">{profile.title}</h2>
+                  {profile.bio && (
+                    <p className="text-primary-foreground/70 text-sm mt-1">{profile.bio}</p>
+                  )}
+                  <SocialIcons socialLinks={profile.social_links || {}} />
+                </div>
+                <div className="space-y-3">
+                  {links.filter(l => l.visible).map(link => (
+                    <div key={link.id} className="py-3 px-4 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground font-medium text-center text-sm">
+                      {link.title || "Untitled Link"}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

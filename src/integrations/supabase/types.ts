@@ -91,6 +91,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           id: string
+          social_links: Json | null
           theme_gradient: string | null
           theme_name: string | null
           title: string | null
@@ -103,6 +104,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: string
+          social_links?: Json | null
           theme_gradient?: string | null
           theme_name?: string | null
           title?: string | null
@@ -115,6 +117,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: string
+          social_links?: Json | null
           theme_gradient?: string | null
           theme_name?: string | null
           title?: string | null

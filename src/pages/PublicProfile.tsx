@@ -3,14 +3,27 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import { SocialIcons } from "@/components/profile/SocialIcons";
+
+interface SocialLinks {
+  instagram?: string;
+  twitter?: string;
+  youtube?: string;
+  facebook?: string;
+  linkedin?: string;
+  github?: string;
+  website?: string;
+}
 
 interface Profile {
   id: string;
+  user_id: string;
   username: string;
   title: string;
   bio: string;
   avatar_url: string | null;
   theme_gradient: string;
+  social_links: SocialLinks;
 }
 
 interface LinkItem {
@@ -51,7 +64,10 @@ export default function PublicProfile() {
           return;
         }
 
-        setProfile(profileData);
+        setProfile({
+          ...profileData,
+          social_links: (profileData.social_links as SocialLinks) || {},
+        });
 
         // Record view
         await supabase.from("profile_views").insert({
@@ -82,10 +98,8 @@ export default function PublicProfile() {
   }, [username]);
 
   const handleLinkClick = async (linkId: string, url: string) => {
-    // Open link in new tab first for better UX
     window.open(url, "_blank", "noopener,noreferrer");
     
-    // Increment click count in background
     try {
       const { data: currentLink } = await supabase
         .from("links")
@@ -154,6 +168,9 @@ export default function PublicProfile() {
           {profile.bio && (
             <p className="text-primary-foreground/70 mt-2 max-w-xs mx-auto">{profile.bio}</p>
           )}
+          
+          {/* Social Icons */}
+          <SocialIcons socialLinks={profile.social_links || {}} />
         </motion.div>
 
         {/* Links */}
