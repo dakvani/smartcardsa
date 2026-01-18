@@ -43,12 +43,68 @@ export type Database = {
           },
         ]
       }
+      link_clicks: {
+        Row: {
+          browser: string | null
+          city: string | null
+          clicked_at: string
+          country: string | null
+          device_type: string | null
+          id: string
+          link_id: string
+          os: string | null
+          profile_id: string
+          referrer: string | null
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          link_id: string
+          os?: string | null
+          profile_id: string
+          referrer?: string | null
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          link_id?: string
+          os?: string | null
+          profile_id?: string
+          referrer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_clicks_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       links: {
         Row: {
           click_count: number | null
           created_at: string | null
           id: string
           position: number
+          scheduled_end: string | null
+          scheduled_start: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string | null
@@ -61,6 +117,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           position?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
@@ -73,12 +131,53 @@ export type Database = {
           created_at?: string | null
           id?: string
           position?: number
+          scheduled_end?: string | null
+          scheduled_start?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
           url?: string | null
           user_id?: string
           visible?: boolean | null
+        }
+        Relationships: []
+      }
+      profile_templates: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          gradient_direction: string | null
+          id: string
+          is_premium: boolean | null
+          name: string
+          preview_image_url: string | null
+          theme_gradient: string
+          theme_name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          gradient_direction?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name: string
+          preview_image_url?: string | null
+          theme_gradient: string
+          theme_name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          gradient_direction?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name?: string
+          preview_image_url?: string | null
+          theme_gradient?: string
+          theme_name?: string
         }
         Relationships: []
       }
