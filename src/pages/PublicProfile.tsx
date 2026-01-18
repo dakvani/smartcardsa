@@ -24,6 +24,9 @@ interface Profile {
   avatar_url: string | null;
   theme_gradient: string;
   social_links: SocialLinks;
+  custom_bg_color: string | null;
+  custom_accent_color: string | null;
+  gradient_direction: string;
 }
 
 interface LinkItem {
@@ -31,6 +34,7 @@ interface LinkItem {
   title: string;
   url: string;
   visible: boolean;
+  thumbnail_url: string | null;
 }
 
 export default function PublicProfile() {
@@ -146,8 +150,22 @@ export default function PublicProfile() {
     );
   }
 
+  // Compute background style
+  const bgStyle = profile.custom_bg_color ? {
+    background: profile.custom_accent_color
+      ? `linear-gradient(to bottom, ${profile.custom_bg_color}, ${profile.custom_accent_color})`
+      : profile.custom_bg_color,
+  } : undefined;
+
+  const bgClass = !profile.custom_bg_color 
+    ? `bg-gradient-${profile.gradient_direction || 'to-b'} ${profile.theme_gradient}`
+    : '';
+
   return (
-    <div className={`min-h-screen bg-gradient-to-b ${profile.theme_gradient} py-12 px-4`}>
+    <div 
+      className={`min-h-screen py-12 px-4 ${bgClass}`}
+      style={bgStyle}
+    >
       <div className="max-w-md mx-auto">
         {/* Profile Header */}
         <motion.div
@@ -182,9 +200,19 @@ export default function PublicProfile() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => handleLinkClick(link.id, link.url)}
-              className="w-full py-4 px-6 rounded-2xl bg-primary-foreground/20 backdrop-blur text-primary-foreground font-semibold text-center hover:bg-primary-foreground/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="w-full flex items-center gap-4 py-4 px-6 rounded-2xl bg-primary-foreground/20 backdrop-blur hover:bg-primary-foreground/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
-              {link.title}
+              {link.thumbnail_url && (
+                <img 
+                  src={link.thumbnail_url} 
+                  alt="" 
+                  className="w-10 h-10 rounded-xl object-cover flex-shrink-0" 
+                />
+              )}
+              <span className="flex-1 text-primary-foreground font-semibold text-center">
+                {link.title}
+              </span>
+              {link.thumbnail_url && <div className="w-10" />}
             </motion.button>
           ))}
         </div>
