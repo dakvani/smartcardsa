@@ -30,6 +30,7 @@ import { AnalyticsCharts } from "@/components/dashboard/AnalyticsCharts";
 import { ThemeCustomizer } from "@/components/dashboard/ThemeCustomizer";
 import { QRCodeGenerator } from "@/components/dashboard/QRCodeGenerator";
 import { EmailSubscribers } from "@/components/dashboard/EmailSubscribers";
+import { ProfileTemplates } from "@/components/dashboard/ProfileTemplates";
 
 interface Profile {
   id: string;
@@ -56,6 +57,8 @@ interface LinkItem {
   position: number;
   click_count: number;
   thumbnail_url: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
 }
 
 const tabs = [
@@ -450,6 +453,17 @@ export default function Dashboard() {
                       updateProfile(updates as Partial<Profile>);
                     }}
                   />
+
+                  {/* Profile Templates */}
+                  <div className="border-t border-border pt-6">
+                    <ProfileTemplates
+                      currentThemeName={profile.theme_name}
+                      onApply={(updates) => {
+                        setProfile({ ...profile, ...updates } as Profile);
+                        updateProfile(updates as Partial<Profile>);
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 

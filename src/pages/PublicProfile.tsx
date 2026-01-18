@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { SocialIcons } from "@/components/profile/SocialIcons";
 import { EmailSignup } from "@/components/profile/EmailSignup";
+import { parseUserAgent } from "@/lib/userAgentParser";
 
 interface SocialLinks {
   instagram?: string;
@@ -37,7 +38,21 @@ interface LinkItem {
   url: string;
   visible: boolean;
   thumbnail_url: string | null;
+  scheduled_start: string | null;
+  scheduled_end: string | null;
 }
+
+// Check if link is currently active based on schedule
+const isLinkActive = (link: LinkItem): boolean => {
+  const now = new Date();
+  if (link.scheduled_start && new Date(link.scheduled_start) > now) {
+    return false;
+  }
+  if (link.scheduled_end && new Date(link.scheduled_end) <= now) {
+    return false;
+  }
+  return true;
+};
 
 export default function PublicProfile() {
   const { username } = useParams<{ username: string }>();
@@ -82,7 +97,7 @@ export default function PublicProfile() {
           user_agent: navigator.userAgent,
         });
 
-        // Fetch visible links
+        // Fetch visible links (including scheduled ones - we filter client-side)
         const { data: linksData, error: linksError } = await supabase
           .from("links")
           .select("*")
@@ -91,7 +106,10 @@ export default function PublicProfile() {
           .order("position", { ascending: true });
 
         if (linksError) throw linksError;
-        setLinks(linksData || []);
+        
+        // Filter to only show active links based on schedule
+        const activeLinks = (linksData || []).filter(isLinkActive);
+        setLinks(activeLinks);
       } catch (error) {
         console.error("Error loading profile:", error);
         setNotFound(true);
@@ -106,7 +124,24 @@ export default function PublicProfile() {
   const handleLinkClick = async (linkId: string, url: string) => {
     window.open(url, "_blank", "noopener,noreferrer");
     
+    if (!profile) return;
+
     try {
+      // Parse user agent for detailed analytics
+      const uaData = parseUserAgent(navigator.userAgent);
+
+      // Record detailed click data
+      await supabase.from("link_clicks").insert({
+        link_id: linkId,
+        profile_id: profile.id,
+        device_type: uaData.device_type,
+        browser: uaData.browser,
+        os: uaData.os,
+        referrer: document.referrer || null,
+        // Note: country/city would require a geolocation API
+      });
+
+      // Also update click count on link
       const { data: currentLink } = await supabase
         .from("links")
         .select("click_count")

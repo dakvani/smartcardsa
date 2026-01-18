@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { GripVertical, Eye, EyeOff, Trash2, BarChart3 } from "lucide-react";
 import { LinkThumbnailUpload } from "./LinkThumbnailUpload";
+import { LinkScheduler } from "./LinkScheduler";
 
 interface LinkItem {
   id: string;
@@ -12,6 +13,8 @@ interface LinkItem {
   visible: boolean;
   click_count: number;
   thumbnail_url?: string | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
 }
 
 interface SortableLinkItemProps {
@@ -76,9 +79,16 @@ export function SortableLinkItem({ link, onUpdate, onDelete }: SortableLinkItemP
             placeholder="https://..."
             className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm"
           />
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <BarChart3 className="w-3 h-3" />
-            <span>{link.click_count} clicks</span>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <BarChart3 className="w-3 h-3" />
+              <span>{link.click_count} clicks</span>
+            </div>
+            <LinkScheduler
+              scheduledStart={link.scheduled_start || null}
+              scheduledEnd={link.scheduled_end || null}
+              onUpdate={(start, end) => onUpdate(link.id, { scheduled_start: start, scheduled_end: end })}
+            />
           </div>
         </div>
         <button
