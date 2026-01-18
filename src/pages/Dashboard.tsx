@@ -26,6 +26,8 @@ import { AvatarUpload } from "@/components/dashboard/AvatarUpload";
 import { SocialLinksEditor, SocialLinks } from "@/components/dashboard/SocialLinksEditor";
 import { SortableLinkItem } from "@/components/dashboard/SortableLinkItem";
 import { SocialIcons } from "@/components/profile/SocialIcons";
+import { AnalyticsCharts } from "@/components/dashboard/AnalyticsCharts";
+import { ThemeCustomizer } from "@/components/dashboard/ThemeCustomizer";
 
 interface Profile {
   id: string;
@@ -37,6 +39,9 @@ interface Profile {
   theme_name: string;
   theme_gradient: string;
   social_links: SocialLinks;
+  custom_bg_color: string | null;
+  custom_accent_color: string | null;
+  gradient_direction: string;
 }
 
 interface LinkItem {
@@ -47,6 +52,7 @@ interface LinkItem {
   visible: boolean;
   position: number;
   click_count: number;
+  thumbnail_url: string | null;
 }
 
 const tabs = [
@@ -56,7 +62,7 @@ const tabs = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-const themes = [
+const presetThemes = [
   { name: "Midnight", gradient: "from-indigo-900 via-purple-900 to-pink-900" },
   { name: "Sunset", gradient: "from-orange-500 via-pink-500 to-purple-600" },
   { name: "Ocean", gradient: "from-cyan-500 via-blue-500 to-indigo-600" },
@@ -289,7 +295,18 @@ export default function Dashboard() {
 
   if (!user || !profile) return null;
 
-  const selectedTheme = themes.find(t => t.name === profile.theme_name) || themes[0];
+  const selectedTheme = presetThemes.find(t => t.name === profile.theme_name) || presetThemes[0];
+  
+  // Compute preview gradient
+  const previewGradient = profile.custom_bg_color 
+    ? undefined 
+    : profile.theme_gradient || selectedTheme.gradient;
+  
+  const previewStyle = profile.custom_bg_color ? {
+    background: profile.custom_accent_color
+      ? `linear-gradient(to bottom, ${profile.custom_bg_color}, ${profile.custom_accent_color})`
+      : profile.custom_bg_color,
+  } : undefined;
 
   return (
     <div className="min-h-screen bg-secondary/30">
@@ -417,57 +434,23 @@ export default function Dashboard() {
                     onBlur={() => updateProfile({ social_links: profile.social_links })}
                   />
 
-                  <div>
-                    <label className="block text-sm font-medium mb-3">Theme</label>
-                    <div className="grid grid-cols-5 gap-3">
-                      {themes.map(theme => (
-                        <button
-                          key={theme.name}
-                          onClick={() => updateProfile({ theme_name: theme.name, theme_gradient: theme.gradient })}
-                          className={`aspect-square rounded-xl bg-gradient-to-b ${theme.gradient} transition-all ${
-                            profile.theme_name === theme.name ? "ring-2 ring-primary ring-offset-2" : "hover:scale-105"
-                          }`}
-                          title={theme.name}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  {/* Theme Customizer */}
+                  <ThemeCustomizer
+                    themeName={profile.theme_name}
+                    themeGradient={profile.theme_gradient}
+                    customBgColor={profile.custom_bg_color}
+                    customAccentColor={profile.custom_accent_color}
+                    gradientDirection={profile.gradient_direction || "to-b"}
+                    onUpdate={(updates) => {
+                      setProfile({ ...profile, ...updates } as Profile);
+                      updateProfile(updates as Partial<Profile>);
+                    }}
+                  />
                 </div>
               )}
 
               {activeTab === "analytics" && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-6 bg-secondary/50 rounded-xl text-center">
-                      <p className="text-4xl font-bold">{analytics.views.toLocaleString()}</p>
-                      <p className="text-sm text-muted-foreground mt-1">Total Views</p>
-                    </div>
-                    <div className="p-6 bg-secondary/50 rounded-xl text-center">
-                      <p className="text-4xl font-bold">{analytics.clicks.toLocaleString()}</p>
-                      <p className="text-sm text-muted-foreground mt-1">Total Clicks</p>
-                    </div>
-                  </div>
-                  
-                  {links.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold mb-3">Top Performing Links</h3>
-                      <div className="space-y-2">
-                        {[...links]
-                          .sort((a, b) => (b.click_count || 0) - (a.click_count || 0))
-                          .slice(0, 5)
-                          .map((link, index) => (
-                            <div key={link.id} className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
-                              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
-                                {index + 1}
-                              </span>
-                              <span className="flex-1 truncate text-sm font-medium">{link.title}</span>
-                              <span className="text-sm text-muted-foreground">{link.click_count} clicks</span>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <AnalyticsCharts profileId={profile.id} links={links} />
               )}
 
               {activeTab === "settings" && (
@@ -505,7 +488,10 @@ export default function Dashboard() {
           <div className="lg:w-[40%] lg:sticky lg:top-24 lg:h-fit">
             <div className="bg-background rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground text-center mb-4">Live Preview</p>
-              <div className={`rounded-[2rem] bg-gradient-to-b ${selectedTheme.gradient} p-6 min-h-[600px] overflow-hidden`}>
+              <div 
+                className={`rounded-[2rem] p-6 min-h-[600px] overflow-hidden ${!previewStyle ? `bg-gradient-${profile.gradient_direction || 'to-b'} ${previewGradient}` : ''}`}
+                style={previewStyle}
+              >
                 <div className="text-center mb-6">
                   <div className="w-20 h-20 mx-auto rounded-full bg-primary-foreground/20 backdrop-blur mb-3 flex items-center justify-center overflow-hidden">
                     {profile.avatar_url ? (
@@ -524,8 +510,14 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-3">
                   {links.filter(l => l.visible).map(link => (
-                    <div key={link.id} className="py-3 px-4 rounded-xl bg-primary-foreground/20 backdrop-blur text-primary-foreground font-medium text-center text-sm">
-                      {link.title || "Untitled Link"}
+                    <div key={link.id} className="flex items-center gap-3 py-3 px-4 rounded-xl bg-primary-foreground/20 backdrop-blur">
+                      {link.thumbnail_url && (
+                        <img src={link.thumbnail_url} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+                      )}
+                      <span className="flex-1 text-primary-foreground font-medium text-center text-sm">
+                        {link.title || "Untitled Link"}
+                      </span>
+                      {link.thumbnail_url && <div className="w-8" />}
                     </div>
                   ))}
                 </div>

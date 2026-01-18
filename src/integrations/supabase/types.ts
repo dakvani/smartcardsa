@@ -90,6 +90,9 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
+          custom_accent_color: string | null
+          custom_bg_color: string | null
+          gradient_direction: string | null
           id: string
           social_links: Json | null
           theme_gradient: string | null
@@ -103,6 +106,9 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          custom_accent_color?: string | null
+          custom_bg_color?: string | null
+          gradient_direction?: string | null
           id?: string
           social_links?: Json | null
           theme_gradient?: string | null
@@ -116,6 +122,9 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          custom_accent_color?: string | null
+          custom_bg_color?: string | null
+          gradient_direction?: string | null
           id?: string
           social_links?: Json | null
           theme_gradient?: string | null

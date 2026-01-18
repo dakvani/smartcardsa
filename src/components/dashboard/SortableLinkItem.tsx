@@ -2,13 +2,16 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { motion } from "framer-motion";
 import { GripVertical, Eye, EyeOff, Trash2, BarChart3 } from "lucide-react";
+import { LinkThumbnailUpload } from "./LinkThumbnailUpload";
 
 interface LinkItem {
   id: string;
+  user_id: string;
   title: string;
   url: string;
   visible: boolean;
   click_count: number;
+  thumbnail_url?: string | null;
 }
 
 interface SortableLinkItemProps {
@@ -49,6 +52,15 @@ export function SortableLinkItem({ link, onUpdate, onDelete }: SortableLinkItemP
         >
           <GripVertical className="w-5 h-5 text-muted-foreground" />
         </button>
+        
+        {/* Thumbnail Upload */}
+        <LinkThumbnailUpload
+          userId={link.user_id}
+          linkId={link.id}
+          currentThumbnail={link.thumbnail_url || null}
+          onUpload={(url) => onUpdate(link.id, { thumbnail_url: url })}
+        />
+
         <div className="flex-1 space-y-3">
           <input
             value={link.title}
