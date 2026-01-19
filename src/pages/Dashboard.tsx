@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy 
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { Plus, ExternalLink, LogOut, BarChart3, Palette, Settings, Link2, Loader2, Copy, Check, Folder } from "lucide-react";
+import { Plus, ExternalLink, LogOut, BarChart3, Palette, Settings as SettingsIcon, Link2, Loader2, Copy, Check, Folder } from "lucide-react";
 import { toast } from "sonner";
 import type { User, Session } from "@supabase/supabase-js";
 import { AvatarUpload } from "@/components/dashboard/AvatarUpload";
@@ -69,7 +69,7 @@ const tabs = [
   { id: "links", label: "Links", icon: Link2 },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
 const presetThemes = [
@@ -665,6 +665,16 @@ export default function Dashboard() {
                       updateProfile({ email_collection_enabled: enabled } as Partial<Profile>);
                     }}
                   />
+
+                  {/* Account Settings Link */}
+                  <div className="border-t border-border pt-6">
+                    <Link to="/settings">
+                      <Button variant="outline" className="w-full">
+                        <SettingsIcon className="w-4 h-4 mr-2" />
+                        Account Settings (Email & Password)
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
