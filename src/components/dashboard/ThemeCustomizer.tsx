@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Palette, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Palette, ChevronDown, ChevronUp, Sparkles, Gauge, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import { Slider } from "@/components/ui/slider";
 
 interface ThemeCustomizerProps {
   themeName: string;
@@ -9,6 +10,8 @@ interface ThemeCustomizerProps {
   customAccentColor: string | null;
   gradientDirection: string;
   animationType: string | null;
+  animationSpeed?: number;
+  animationIntensity?: number;
   onUpdate: (updates: {
     theme_name?: string;
     theme_gradient?: string;
@@ -16,6 +19,8 @@ interface ThemeCustomizerProps {
     custom_accent_color?: string | null;
     gradient_direction?: string;
     animation_type?: string | null;
+    animation_speed?: number;
+    animation_intensity?: number;
   }) => void;
 }
 
@@ -44,15 +49,21 @@ const gradientDirections = [
 ];
 
 const animationTypes = [
-  { value: null, label: "None", icon: "✕" },
-  { value: "pulse", label: "Pulse", icon: "✨" },
-  { value: "particles", label: "Particles", icon: "⭐" },
-  { value: "wave", label: "Wave", icon: "🌊" },
-  { value: "gradient-shift", label: "Shift", icon: "🌈" },
-  { value: "glow", label: "Glow", icon: "💫" },
-  { value: "orbs", label: "Orbs", icon: "🔮" },
-  { value: "shimmer", label: "Shimmer", icon: "✦" },
-  { value: "neon", label: "Neon", icon: "💡" },
+  { value: null, label: "None", icon: "✕", category: "basic" },
+  { value: "pulse", label: "Pulse", icon: "✨", category: "basic" },
+  { value: "particles", label: "Particles", icon: "⭐", category: "basic" },
+  { value: "wave", label: "Wave", icon: "🌊", category: "basic" },
+  { value: "gradient-shift", label: "Shift", icon: "🌈", category: "basic" },
+  { value: "glow", label: "Glow", icon: "💫", category: "basic" },
+  { value: "orbs", label: "Orbs", icon: "🔮", category: "basic" },
+  { value: "shimmer", label: "Shimmer", icon: "✦", category: "basic" },
+  { value: "neon", label: "Neon", icon: "💡", category: "basic" },
+  { value: "rain", label: "Rain", icon: "🌧️", category: "weather" },
+  { value: "snow", label: "Snow", icon: "❄️", category: "weather" },
+  { value: "confetti", label: "Confetti", icon: "🎉", category: "fun" },
+  { value: "bokeh", label: "Bokeh", icon: "🔵", category: "blur" },
+  { value: "fireflies", label: "Fireflies", icon: "🌟", category: "nature" },
+  { value: "matrix", label: "Matrix", icon: "💻", category: "tech" },
 ];
 
 export function ThemeCustomizer({
@@ -62,6 +73,8 @@ export function ThemeCustomizer({
   customAccentColor,
   gradientDirection,
   animationType,
+  animationSpeed = 1,
+  animationIntensity = 1,
   onUpdate,
 }: ThemeCustomizerProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -80,6 +93,14 @@ export function ThemeCustomizer({
 
   const handleAnimationChange = (type: string | null) => {
     onUpdate({ animation_type: type });
+  };
+
+  const handleSpeedChange = (value: number[]) => {
+    onUpdate({ animation_speed: value[0] });
+  };
+
+  const handleIntensityChange = (value: number[]) => {
+    onUpdate({ animation_intensity: value[0] });
   };
 
   const handleCustomColorChange = (type: "bg" | "accent", color: string) => {
@@ -213,7 +234,7 @@ export function ThemeCustomizer({
               <Sparkles className="w-3 h-3" />
               Animation Effect
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
               {animationTypes.map((anim) => (
                 <button
                   key={anim.value || "none"}
@@ -231,20 +252,73 @@ export function ThemeCustomizer({
             </div>
           </div>
 
+          {/* Animation Controls - Only show when animation is selected */}
+          {animationType && (
+            <div className="space-y-4 p-3 bg-background/50 rounded-lg border border-input">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  Speed: {animationSpeed.toFixed(1)}x
+                </label>
+                <Slider
+                  value={[animationSpeed]}
+                  onValueChange={handleSpeedChange}
+                  min={0.3}
+                  max={2}
+                  step={0.1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                  <span>Slow</span>
+                  <span>Fast</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                  <Gauge className="w-3 h-3" />
+                  Intensity: {animationIntensity.toFixed(1)}x
+                </label>
+                <Slider
+                  value={[animationIntensity]}
+                  onValueChange={handleIntensityChange}
+                  min={0.3}
+                  max={2}
+                  step={0.1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                  <span>Subtle</span>
+                  <span>Intense</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Animation Preview */}
           {animationType && (
             <div>
               <label className="block text-xs text-muted-foreground mb-2">Animation Preview</label>
               <div 
-                className={`h-20 rounded-xl relative overflow-hidden bg-gradient-to-b ${themeGradient || 'from-indigo-900 via-purple-900 to-pink-900'}`}
+                className={`h-24 rounded-xl relative overflow-hidden bg-gradient-to-b ${themeGradient || 'from-indigo-900 via-purple-900 to-pink-900'}`}
               >
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                   animate={{ x: ["-100%", "100%"] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 0.5 }}
+                  transition={{ duration: 2 / animationSpeed, repeat: Infinity, repeatDelay: 0.5 }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur" />
+                  <motion.div 
+                    className="rounded-full bg-white/20 backdrop-blur"
+                    style={{ width: 32 * animationIntensity, height: 32 * animationIntensity }}
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 2 / animationSpeed, repeat: Infinity }}
+                  />
+                </div>
+                <div className="absolute bottom-2 left-2 right-2 text-center">
+                  <span className="text-[10px] text-white/60 bg-black/30 px-2 py-1 rounded">
+                    Speed: {animationSpeed.toFixed(1)}x | Intensity: {animationIntensity.toFixed(1)}x
+                  </span>
                 </div>
               </div>
             </div>

@@ -32,6 +32,8 @@ interface Profile {
   gradient_direction: string;
   email_collection_enabled: boolean;
   animation_type: string | null;
+  animation_speed: number;
+  animation_intensity: number;
 }
 
 interface LinkItem {
@@ -227,7 +229,10 @@ export default function PublicProfile() {
       style={bgStyle}
     >
       {/* Animated Background */}
-      <AnimatedBackground animationType={profile.animation_type} />
+      <AnimatedBackground 
+        animationType={profile.animation_type} 
+        config={{ speed: profile.animation_speed || 1, intensity: profile.animation_intensity || 1 }}
+      />
       
       <div className="max-w-md mx-auto relative z-10">
         {/* Profile Header */}
