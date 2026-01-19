@@ -1,10 +1,20 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
-import { Menu, X, LayoutDashboard, Home } from "lucide-react";
+import { Menu, X, LayoutDashboard, Home, Settings, Package, LogOut, User, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const navLinks = [
   { name: "Templates", href: "/templates" },
@@ -17,27 +27,66 @@ const navLinks = [
 
 export function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const lastScrollY = useRef(0);
   
   const { scrollY } = useScroll();
   const headerOpacity = useTransform(scrollY, [0, 50], [0.6, 0.95]);
 
-  // Check auth state
+  // Check auth state and get user info
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsAuthenticated(!!user);
+      setUserEmail(user?.email ?? null);
+      if (user) {
+        fetchUserProfile(user.id);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session?.user);
+      setUserEmail(session?.user?.email ?? null);
+      if (session?.user) {
+        setTimeout(() => fetchUserProfile(session.user.id), 0);
+      } else {
+        setAvatarUrl(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('user_id', userId)
+      .single();
+    if (data?.avatar_url) {
+      setAvatarUrl(data.avatar_url);
+    }
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Failed to log out");
+    } else {
+      toast.success("Logged out successfully");
+      navigate("/");
+    }
+  };
+
+  const getUserInitials = () => {
+    if (!userEmail) return "U";
+    return userEmail.charAt(0).toUpperCase();
+  };
 
   // Handle scroll direction for show/hide
   useMotionValueEvent(scrollY, "change", (currentScrollY) => {
@@ -148,11 +197,60 @@ export function Navbar() {
                 </Link>
               )}
               <Link to="/dashboard" aria-label="Go to dashboard">
-                <Button variant="gradient" size="sm" className="shadow-glow">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
                   <LayoutDashboard className="w-4 h-4 mr-1" />
                   Dashboard
                 </Button>
               </Link>
+              
+              {/* User Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2 px-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={avatarUrl || undefined} alt="Profile" />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-popover border-border z-50">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">My Account</p>
+                      <p className="text-xs leading-none text-muted-foreground truncate">
+                        {userEmail}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/order-history" className="cursor-pointer">
+                      <Package className="mr-2 h-4 w-4" />
+                      Order History
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -223,6 +321,20 @@ export function Navbar() {
             <div className="pt-4 flex flex-col gap-2" role="group" aria-label="Authentication options">
               {isAuthenticated ? (
                 <>
+                  {/* User info */}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-accent/30 rounded-lg mb-2">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={avatarUrl || undefined} alt="Profile" />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{userEmail}</p>
+                      <p className="text-xs text-muted-foreground">Signed in</p>
+                    </div>
+                  </div>
+                  
                   {location.pathname !== "/" && (
                     <Link to="/" onClick={() => setMobileOpen(false)}>
                       <Button variant="outline" className="w-full border-border/50" aria-label="Go to homepage">
@@ -232,11 +344,34 @@ export function Navbar() {
                     </Link>
                   )}
                   <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
-                    <Button variant="gradient" className="w-full shadow-glow" aria-label="Go to dashboard">
+                    <Button variant="outline" className="w-full border-border/50" aria-label="Go to dashboard">
                       <LayoutDashboard className="w-4 h-4 mr-2" />
                       Dashboard
                     </Button>
                   </Link>
+                  <Link to="/order-history" onClick={() => setMobileOpen(false)}>
+                    <Button variant="outline" className="w-full border-border/50" aria-label="View order history">
+                      <Package className="w-4 h-4 mr-2" />
+                      Order History
+                    </Button>
+                  </Link>
+                  <Link to="/settings" onClick={() => setMobileOpen(false)}>
+                    <Button variant="outline" className="w-full border-border/50" aria-label="Go to settings">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" 
+                    onClick={() => {
+                      handleLogout();
+                      setMobileOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log out
+                  </Button>
                 </>
               ) : (
                 <>
