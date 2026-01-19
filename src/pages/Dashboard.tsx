@@ -101,16 +101,34 @@ export default function Dashboard() {
   );
 
   // Load user data
-  const loadData = useCallback(async (userId: string) => {
+  const loadData = useCallback(async (userId: string, userEmail?: string) => {
     try {
       // Load profile
-      const { data: profileData, error: profileError } = await supabase
+      let { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
         .maybeSingle();
 
       if (profileError) throw profileError;
+      
+      // If no profile exists, create one
+      if (!profileData) {
+        const username = userEmail?.split('@')[0]?.replace(/[^a-z0-9-_]/gi, '') || `user_${userId.slice(0, 8)}`;
+        const { data: newProfile, error: createError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: userId,
+            username,
+            title: `@${username}`,
+          })
+          .select()
+          .single();
+        
+        if (createError) throw createError;
+        profileData = newProfile;
+      }
+      
       if (profileData) {
         setProfile({
           ...profileData,
@@ -163,7 +181,7 @@ export default function Dashboard() {
       if (!session) {
         navigate("/auth");
       } else if (session.user) {
-        setTimeout(() => loadData(session.user.id), 0);
+        setTimeout(() => loadData(session.user.id, session.user.email), 0);
       }
     });
 
@@ -174,7 +192,7 @@ export default function Dashboard() {
       if (!session) {
         navigate("/auth");
       } else if (session.user) {
-        loadData(session.user.id);
+        loadData(session.user.id, session.user.email);
       }
     });
 
