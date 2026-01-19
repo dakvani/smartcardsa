@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -17,27 +17,47 @@ export function Navbar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   
   const { scrollY } = useScroll();
-  const headerY = useTransform(scrollY, [0, 100], [0, -10]);
   const headerOpacity = useTransform(scrollY, [0, 50], [0.6, 0.95]);
-  const headerBlur = useTransform(scrollY, [0, 100], [12, 30]);
 
+  // Handle scroll direction for show/hide
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const currentScrollY = latest;
+    
+    // Always show at top
+    if (currentScrollY < 50) {
+      setIsVisible(true);
+      setHasScrolled(false);
+    } else {
+      setHasScrolled(true);
+      // Show when scrolling up, hide when scrolling down
+      if (currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      }
+    }
+    
+    setLastScrollY(currentScrollY);
+  });
+
+  // Close mobile menu on route change
   useEffect(() => {
-    const handleScroll = () => {
-      setHasScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      style={{ y: headerY }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      animate={{ 
+        y: isVisible ? 0 : -100, 
+        opacity: isVisible ? 1 : 0 
+      }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         hasScrolled 
           ? "border-b border-border/30" 
           : "border-b border-transparent"
