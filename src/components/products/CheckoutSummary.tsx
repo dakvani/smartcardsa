@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,8 @@ import { CartItem } from "./types";
 import { ShoppingCart, Plus, Minus, Trash2, CreditCard, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { CheckoutAuth } from "./CheckoutAuth";
 
 interface CheckoutSummaryProps {
   cart: CartItem[];
@@ -25,6 +27,7 @@ interface CheckoutSummaryProps {
 
 export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, onPlaceOrder }: CheckoutSummaryProps) {
   const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [shippingInfo, setShippingInfo] = useState({
     name: "",
     email: "",
@@ -34,6 +37,20 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, 
     country: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.basePrice * item.quantity, 0);
   const shipping = subtotal > 50 ? 0 : 5.99;
@@ -63,6 +80,14 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, 
     setIsSubmitting(false);
   };
 
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+    toast({
+      title: "Success!",
+      description: "You can now complete your order.",
+    });
+  };
+
   if (cart.length === 0) {
     return (
       <div className="text-center py-12">
@@ -75,6 +100,15 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, 
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Products
         </Button>
+      </div>
+    );
+  }
+
+  // Show loading while checking auth
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -156,80 +190,100 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, 
             ))}
           </AnimatePresence>
         </div>
+
+        {/* Show Auth Form for guests */}
+        {!isAuthenticated && (
+          <div className="mt-8">
+            <CheckoutAuth onAuthSuccess={handleAuthSuccess} />
+          </div>
+        )}
       </div>
 
-      {/* Checkout Form */}
+      {/* Checkout Form - Only show for authenticated users */}
       <div className="bg-card rounded-2xl border border-border p-6">
-        <h3 className="text-xl font-semibold mb-6">Shipping Details</h3>
+        {isAuthenticated ? (
+          <>
+            <h3 className="text-xl font-semibold mb-6">Shipping Details</h3>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Full Name *</Label>
-              <Input
-                id="name"
-                value={shippingInfo.name}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
-                className="mt-1"
-              />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input
+                    id="name"
+                    value={shippingInfo.name}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={shippingInfo.email}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, email: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="address">Address *</Label>
+                <Input
+                  id="address"
+                  value={shippingInfo.address}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={shippingInfo.city}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="postalCode">Postal Code</Label>
+                  <Input
+                    id="postalCode"
+                    value={shippingInfo.postalCode}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, postalCode: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    value={shippingInfo.country}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={shippingInfo.email}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, email: e.target.value })}
-                className="mt-1"
-              />
-            </div>
+
+            <Separator className="my-6" />
+          </>
+        ) : (
+          <div className="text-center py-8 mb-6">
+            <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+            <h3 className="text-lg font-semibold mb-2">Almost there!</h3>
+            <p className="text-sm text-muted-foreground">
+              Please sign in on the left to complete your purchase.
+            </p>
           </div>
+        )}
 
-          <div>
-            <Label htmlFor="address">Address *</Label>
-            <Input
-              id="address"
-              value={shippingInfo.address}
-              onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
-              className="mt-1"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                value={shippingInfo.city}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="postalCode">Postal Code</Label>
-              <Input
-                id="postalCode"
-                value={shippingInfo.postalCode}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, postalCode: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="country">Country</Label>
-              <Input
-                id="country"
-                value={shippingInfo.country}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-          </div>
-        </div>
-
-        <Separator className="my-6" />
-
-        {/* Order Summary */}
+        {/* Order Summary - Always visible */}
         <div className="space-y-3">
+          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Order Summary</h4>
           <div className="flex justify-between text-muted-foreground">
             <span>Subtotal</span>
             <span>${subtotal.toFixed(2)}</span>
@@ -254,10 +308,10 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, 
           variant="gradient"
           className="w-full mt-6"
           onClick={handleCheckout}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isAuthenticated}
         >
           <CreditCard className="w-4 h-4 mr-2" />
-          {isSubmitting ? "Processing..." : "Place Order"}
+          {!isAuthenticated ? "Sign in to place order" : isSubmitting ? "Processing..." : "Place Order"}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
