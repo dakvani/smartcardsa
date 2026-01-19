@@ -13,9 +13,17 @@ interface CheckoutSummaryProps {
   onUpdateQuantity: (index: number, quantity: number) => void;
   onRemoveItem: (index: number) => void;
   onBack: () => void;
+  onPlaceOrder?: (shippingInfo: {
+    name: string;
+    email: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  }) => void;
 }
 
-export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack }: CheckoutSummaryProps) {
+export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, onPlaceOrder }: CheckoutSummaryProps) {
   const { toast } = useToast();
   const [shippingInfo, setShippingInfo] = useState({
     name: "",
@@ -25,12 +33,13 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack }
     postalCode: "",
     country: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.basePrice * item.quantity, 0);
   const shipping = subtotal > 50 ? 0 : 5.99;
   const total = subtotal + shipping;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!shippingInfo.name || !shippingInfo.email || !shippingInfo.address) {
       toast({
         title: "Missing information",
@@ -40,10 +49,18 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack }
       return;
     }
 
-    toast({
-      title: "Checkout initiated",
-      description: "Payment integration coming soon! Your order has been saved.",
-    });
+    setIsSubmitting(true);
+    
+    if (onPlaceOrder) {
+      await onPlaceOrder(shippingInfo);
+    } else {
+      toast({
+        title: "Checkout initiated",
+        description: "Payment integration coming soon! Your order has been saved.",
+      });
+    }
+    
+    setIsSubmitting(false);
   };
 
   if (cart.length === 0) {
@@ -237,9 +254,10 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack }
           variant="gradient"
           className="w-full mt-6"
           onClick={handleCheckout}
+          disabled={isSubmitting}
         >
           <CreditCard className="w-4 h-4 mr-2" />
-          Proceed to Payment
+          {isSubmitting ? "Processing..." : "Place Order"}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
