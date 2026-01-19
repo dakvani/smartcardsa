@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navLinks = [
   { name: "Templates", href: "/templates" },
@@ -64,17 +65,28 @@ export function Navbar() {
           ? "border-b border-border/30" 
           : "border-b border-transparent"
       }`}
+      role="banner"
     >
       <motion.div 
         className="absolute inset-0 glass-heavy"
         style={{ opacity: headerOpacity }}
+        aria-hidden="true"
       />
-      <nav className="container mx-auto px-4 h-16 flex items-center justify-between relative z-10">
+      <nav 
+        className="container mx-auto px-4 h-16 flex items-center justify-between relative z-10"
+        role="navigation"
+        aria-label="Main navigation"
+      >
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link 
+          to="/" 
+          className="flex items-center gap-2 group"
+          aria-label="SmartCard - Go to homepage"
+        >
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 3 }}
             className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-glow"
+            aria-hidden="true"
           >
             <span className="text-primary-foreground font-bold text-sm">S</span>
           </motion.div>
@@ -82,16 +94,19 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-1" role="menubar">
           {navLinks.map((link, index) => (
             <motion.div
               key={link.name}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
+              role="none"
             >
               <Link
                 to={link.href}
+                role="menuitem"
+                aria-current={location.pathname === link.href ? "page" : undefined}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   location.pathname === link.href
                     ? "bg-accent/80 text-accent-foreground backdrop-blur-sm"
@@ -104,14 +119,15 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Auth Buttons */}
+        {/* Auth Buttons & Theme Toggle */}
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/auth">
+          <ThemeToggle />
+          <Link to="/auth" aria-label="Log in to your account">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               Log in
             </Button>
           </Link>
-          <Link to="/auth?signup=true">
+          <Link to="/auth?signup=true" aria-label="Sign up for a free account">
             <Button variant="gradient" size="sm" className="shadow-glow">
               Sign up free
             </Button>
@@ -119,21 +135,30 @@ export function Navbar() {
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
+            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          >
+            {mobileOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu */}
       {mobileOpen && (
         <motion.div
+          id="mobile-menu"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
           className="md:hidden glass-heavy border-b border-border/30"
+          role="menu"
+          aria-label="Mobile navigation menu"
         >
           <div className="container mx-auto px-4 py-4 space-y-2">
             {navLinks.map((link, index) => (
@@ -142,10 +167,13 @@ export function Navbar() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
+                role="none"
               >
                 <Link
                   to={link.href}
                   onClick={() => setMobileOpen(false)}
+                  role="menuitem"
+                  aria-current={location.pathname === link.href ? "page" : undefined}
                   className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                     location.pathname === link.href
                       ? "bg-accent/80 text-accent-foreground"
@@ -156,14 +184,14 @@ export function Navbar() {
                 </Link>
               </motion.div>
             ))}
-            <div className="pt-4 flex flex-col gap-2">
+            <div className="pt-4 flex flex-col gap-2" role="group" aria-label="Authentication options">
               <Link to="/auth" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full border-border/50">
+                <Button variant="outline" className="w-full border-border/50" aria-label="Log in to your account">
                   Log in
                 </Button>
               </Link>
               <Link to="/auth?signup=true" onClick={() => setMobileOpen(false)}>
-                <Button variant="gradient" className="w-full shadow-glow">
+                <Button variant="gradient" className="w-full shadow-glow" aria-label="Sign up for a free account">
                   Sign up free
                 </Button>
               </Link>
