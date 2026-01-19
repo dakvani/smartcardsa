@@ -60,10 +60,22 @@ const animationTypes = [
   { value: "neon", label: "Neon", icon: "💡", category: "basic" },
   { value: "rain", label: "Rain", icon: "🌧️", category: "weather" },
   { value: "snow", label: "Snow", icon: "❄️", category: "weather" },
+  { value: "lightning", label: "Lightning", icon: "⚡", category: "weather" },
+  { value: "aurora", label: "Aurora", icon: "🌌", category: "weather" },
+  { value: "leaves", label: "Leaves", icon: "🍂", category: "seasonal" },
   { value: "confetti", label: "Confetti", icon: "🎉", category: "fun" },
   { value: "bokeh", label: "Bokeh", icon: "🔵", category: "blur" },
   { value: "fireflies", label: "Fireflies", icon: "🌟", category: "nature" },
+  { value: "bubbles", label: "Bubbles", icon: "🫧", category: "fun" },
+  { value: "sparkle", label: "Sparkle", icon: "💎", category: "fun" },
   { value: "matrix", label: "Matrix", icon: "💻", category: "tech" },
+];
+
+// Animation presets for quick selection
+const animationPresets = [
+  { name: "Subtle", speed: 0.5, intensity: 0.5, description: "Gentle, understated" },
+  { name: "Moderate", speed: 1, intensity: 1, description: "Balanced default" },
+  { name: "Dramatic", speed: 1.5, intensity: 1.8, description: "Bold, eye-catching" },
 ];
 
 export function ThemeCustomizer({
@@ -255,6 +267,35 @@ export function ThemeCustomizer({
           {/* Animation Controls - Only show when animation is selected */}
           {animationType && (
             <div className="space-y-4 p-3 bg-background/50 rounded-lg border border-input">
+              {/* Presets */}
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2">Quick Presets</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {animationPresets.map((preset) => {
+                    const isActive = 
+                      Math.abs(animationSpeed - preset.speed) < 0.1 && 
+                      Math.abs(animationIntensity - preset.intensity) < 0.1;
+                    return (
+                      <button
+                        key={preset.name}
+                        onClick={() => onUpdate({ 
+                          animation_speed: preset.speed, 
+                          animation_intensity: preset.intensity 
+                        })}
+                        className={`px-3 py-2 text-xs rounded-lg border transition-all ${
+                          isActive
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-input hover:border-primary/50"
+                        }`}
+                        title={preset.description}
+                      >
+                        {preset.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs text-muted-foreground mb-3 flex items-center gap-1">
                   <Zap className="w-3 h-3" />
