@@ -5,6 +5,9 @@ import { NFCProduct } from "./types";
 import { productAnimations } from "./ProductAnimations";
 import { Product3DViewer } from "./Product3DViewer";
 import { ProductGallery } from "./ProductGallery";
+import { ProductReviews } from "./ProductReviews";
+import { ProductRatingBadge } from "./ProductRatingBadge";
+import { WishlistButton } from "./WishlistButton";
 
 interface ProductCardProps {
   product: NFCProduct;
@@ -15,6 +18,7 @@ interface ProductCardProps {
 export function ProductCard({ product, isSelected, onSelect }: ProductCardProps) {
   const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isReviewsOpen, setIsReviewsOpen] = useState(false);
   const AnimationComponent = productAnimations[product.category];
 
   const handle3DViewClick = (e: React.MouseEvent) => {
@@ -66,6 +70,7 @@ export function ProductCard({ product, isSelected, onSelect }: ProductCardProps)
           
           {/* Action Buttons */}
           <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <WishlistButton productId={product.id} productName={product.name} />
             <motion.button
               onClick={handleGalleryClick}
               className="p-2.5 rounded-xl bg-background/90 backdrop-blur-sm border border-border/50 shadow-lg"
@@ -109,9 +114,17 @@ export function ProductCard({ product, isSelected, onSelect }: ProductCardProps)
             )}
           </div>
           
-          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 mb-4">
+          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 mb-2">
             {product.description}
           </p>
+          
+          {/* Rating Badge */}
+          <div className="mb-4" onClick={(e) => e.stopPropagation()}>
+            <ProductRatingBadge 
+              productId={product.id} 
+              onClick={() => setIsReviewsOpen(true)} 
+            />
+          </div>
           
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
             <div>
@@ -152,6 +165,14 @@ export function ProductCard({ product, isSelected, onSelect }: ProductCardProps)
         product={product}
         isOpen={isGalleryOpen}
         onClose={() => setIsGalleryOpen(false)}
+      />
+
+      {/* Reviews Modal */}
+      <ProductReviews
+        productId={product.id}
+        productName={product.name}
+        isOpen={isReviewsOpen}
+        onClose={() => setIsReviewsOpen(false)}
       />
     </>
   );
