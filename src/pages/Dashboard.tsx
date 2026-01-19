@@ -50,6 +50,8 @@ interface Profile {
   gradient_direction: string;
   email_collection_enabled: boolean;
   animation_type: string | null;
+  animation_speed: number;
+  animation_intensity: number;
 }
 
 interface LinkItem {
@@ -609,6 +611,8 @@ export default function Dashboard() {
                     customAccentColor={profile.custom_accent_color}
                     gradientDirection={profile.gradient_direction || "to-b"}
                     animationType={profile.animation_type}
+                    animationSpeed={profile.animation_speed || 1}
+                    animationIntensity={profile.animation_intensity || 1}
                     onUpdate={(updates) => {
                       setProfile({ ...profile, ...updates } as Profile);
                       updateProfile(updates as Partial<Profile>);
@@ -693,7 +697,10 @@ export default function Dashboard() {
               >
                 {/* Animated Background Preview */}
                 <div className="absolute inset-0 rounded-[2rem] overflow-hidden">
-                  <AnimatedBackground animationType={profile.animation_type} />
+                  <AnimatedBackground 
+                    animationType={profile.animation_type} 
+                    config={{ speed: profile.animation_speed || 1, intensity: profile.animation_intensity || 1 }}
+                  />
                 </div>
                 
                 <div className="text-center mb-6 relative z-10">
