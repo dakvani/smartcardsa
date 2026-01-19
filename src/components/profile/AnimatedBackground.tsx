@@ -6,6 +6,11 @@ import {
   SnowAnimation,
   FirefliesAnimation,
   MatrixAnimation,
+  LightningAnimation,
+  AuroraAnimation,
+  FallingLeavesAnimation,
+  BubblesAnimation,
+  SparkleAnimation,
   AnimationConfig,
   defaultConfig,
 } from "./animations";
@@ -47,6 +52,16 @@ export function AnimatedBackground({ animationType, config = defaultConfig }: An
       return <FirefliesAnimation config={config} />;
     case "matrix":
       return <MatrixAnimation config={config} />;
+    case "lightning":
+      return <LightningAnimation config={config} />;
+    case "aurora":
+      return <AuroraAnimation config={config} />;
+    case "leaves":
+      return <FallingLeavesAnimation config={config} />;
+    case "bubbles":
+      return <BubblesAnimation config={config} />;
+    case "sparkle":
+      return <SparkleAnimation config={config} />;
     default:
       return null;
   }
