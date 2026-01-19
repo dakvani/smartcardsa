@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navLinks = [
   { name: "Templates", href: "/templates" },
@@ -16,49 +16,81 @@ const navLinks = [
 export function Navbar() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+  
+  const { scrollY } = useScroll();
+  const headerY = useTransform(scrollY, [0, 100], [0, -10]);
+  const headerOpacity = useTransform(scrollY, [0, 50], [0.6, 0.95]);
+  const headerBlur = useTransform(scrollY, [0, 100], [12, 30]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border"
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      style={{ y: headerY }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        hasScrolled 
+          ? "border-b border-border/30" 
+          : "border-b border-transparent"
+      }`}
     >
-      <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <motion.div 
+        className="absolute inset-0 glass-heavy"
+        style={{ opacity: headerOpacity }}
+      />
+      <nav className="container mx-auto px-4 h-16 flex items-center justify-between relative z-10">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+        <Link to="/" className="flex items-center gap-2 group">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 3 }}
+            className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-glow"
+          >
             <span className="text-primary-foreground font-bold text-sm">S</span>
-          </div>
-          <span className="font-bold text-xl">SmartCard</span>
+          </motion.div>
+          <span className="font-bold text-xl text-foreground/90 group-hover:text-foreground transition-colors">SmartCard</span>
         </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <Link
+          {navLinks.map((link, index) => (
+            <motion.div
               key={link.name}
-              to={link.href}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                location.pathname === link.href
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-              }`}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
             >
-              {link.name}
-            </Link>
+              <Link
+                to={link.href}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  location.pathname === link.href
+                    ? "bg-accent/80 text-accent-foreground backdrop-blur-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                }`}
+              >
+                {link.name}
+              </Link>
+            </motion.div>
           ))}
         </div>
 
         {/* Auth Buttons */}
         <div className="hidden md:flex items-center gap-3">
           <Link to="/auth">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               Log in
             </Button>
           </Link>
           <Link to="/auth?signup=true">
-            <Button variant="gradient" size="sm">
+            <Button variant="gradient" size="sm" className="shadow-glow">
               Sign up free
             </Button>
           </Link>
@@ -66,7 +98,7 @@ export function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2"
+          className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -79,31 +111,37 @@ export function Navbar() {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="md:hidden bg-background border-b border-border"
+          className="md:hidden glass-heavy border-b border-border/30"
         >
           <div className="container mx-auto px-4 py-4 space-y-2">
-            {navLinks.map((link) => (
-              <Link
+            {navLinks.map((link, index) => (
+              <motion.div
                 key={link.name}
-                to={link.href}
-                onClick={() => setMobileOpen(false)}
-                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === link.href
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                }`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
-                {link.name}
-              </Link>
+                <Link
+                  to={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    location.pathname === link.href
+                      ? "bg-accent/80 text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              </motion.div>
             ))}
             <div className="pt-4 flex flex-col gap-2">
               <Link to="/auth" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full border-border/50">
                   Log in
                 </Button>
               </Link>
               <Link to="/auth?signup=true" onClick={() => setMobileOpen(false)}>
-                <Button variant="gradient" className="w-full">
+                <Button variant="gradient" className="w-full shadow-glow">
                   Sign up free
                 </Button>
               </Link>
