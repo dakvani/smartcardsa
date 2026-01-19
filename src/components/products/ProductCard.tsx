@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Box } from "lucide-react";
+import { Box, Images } from "lucide-react";
 import { NFCProduct } from "./types";
 import { productAnimations } from "./ProductAnimations";
 import { Product3DViewer } from "./Product3DViewer";
+import { ProductGallery } from "./ProductGallery";
 
 interface ProductCardProps {
   product: NFCProduct;
@@ -13,11 +14,17 @@ interface ProductCardProps {
 
 export function ProductCard({ product, isSelected, onSelect }: ProductCardProps) {
   const [is3DViewerOpen, setIs3DViewerOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const AnimationComponent = productAnimations[product.category];
 
   const handle3DViewClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIs3DViewerOpen(true);
+  };
+
+  const handleGalleryClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsGalleryOpen(true);
   };
 
   return (
@@ -57,16 +64,27 @@ export function ProductCard({ product, isSelected, onSelect }: ProductCardProps)
             <AnimationComponent />
           </div>
           
-          {/* 3D View Button */}
-          <motion.button
-            onClick={handle3DViewClick}
-            className="absolute top-3 right-3 z-20 p-2.5 rounded-xl bg-background/90 backdrop-blur-sm border border-border/50 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label={`View ${product.name} in 3D`}
-          >
-            <Box className="w-5 h-5 text-primary" />
-          </motion.button>
+          {/* Action Buttons */}
+          <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <motion.button
+              onClick={handleGalleryClick}
+              className="p-2.5 rounded-xl bg-background/90 backdrop-blur-sm border border-border/50 shadow-lg"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label={`View ${product.name} gallery`}
+            >
+              <Images className="w-5 h-5 text-primary" />
+            </motion.button>
+            <motion.button
+              onClick={handle3DViewClick}
+              className="p-2.5 rounded-xl bg-background/90 backdrop-blur-sm border border-border/50 shadow-lg"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label={`View ${product.name} in 3D`}
+            >
+              <Box className="w-5 h-5 text-primary" />
+            </motion.button>
+          </div>
           
           {/* Glow effect on hover */}
           <motion.div
@@ -127,6 +145,13 @@ export function ProductCard({ product, isSelected, onSelect }: ProductCardProps)
         product={product}
         isOpen={is3DViewerOpen}
         onClose={() => setIs3DViewerOpen(false)}
+      />
+
+      {/* Gallery Modal */}
+      <ProductGallery
+        product={product}
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
       />
     </>
   );
