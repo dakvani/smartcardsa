@@ -6,59 +6,109 @@
 
 @layer base {
   :root {
-    /* Dark shaded theme - faded aesthetic */
-    --background: 240 15% 8%;
-    --foreground: 220 15% 85%;
+    /* Light theme */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
 
-    --card: 240 12% 12%;
-    --card-foreground: 220 15% 85%;
+    --card: 0 0% 98%;
+    --card-foreground: 240 10% 10%;
 
-    --popover: 240 12% 10%;
-    --popover-foreground: 220 15% 85%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
 
-    /* Muted violet accent */
-    --primary: 270 50% 50%;
+    /* Violet accent */
+    --primary: 270 60% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 10% 15%;
-    --secondary-foreground: 220 15% 80%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 20%;
 
-    --muted: 240 10% 18%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 240 5% 92%;
+    --muted-foreground: 240 5% 45%;
 
-    --accent: 270 25% 18%;
-    --accent-foreground: 270 50% 70%;
+    --accent: 270 30% 94%;
+    --accent-foreground: 270 60% 45%;
 
-    --destructive: 0 62% 45%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 10% 16%;
-    --input: 240 10% 16%;
-    --ring: 270 50% 50%;
+    --border: 240 5% 88%;
+    --input: 240 5% 88%;
+    --ring: 270 60% 55%;
 
     --radius: 0.75rem;
 
-    /* Dark faded custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(270 50% 40% / 0.8) 0%, hsl(330 50% 40% / 0.6) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(270 40% 35% / 0.7) 0%, hsl(200 60% 40% / 0.5) 100%);
-    --gradient-dark: linear-gradient(135deg, hsl(240 20% 6%) 0%, hsl(270 25% 12%) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    /* Light custom tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(270 60% 55%) 0%, hsl(330 60% 50%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(270 50% 60%) 0%, hsl(200 70% 50%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(240 10% 96%) 0%, hsl(270 20% 94%) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%);
     
-    --shadow-glow: 0 0 80px -20px hsl(270 50% 40% / 0.3);
-    --shadow-card: 0 4px 30px -4px rgba(0, 0, 0, 0.4);
-    --shadow-elevated: 0 25px 50px -15px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 60px -15px hsl(270 60% 55% / 0.25);
+    --shadow-card: 0 4px 20px -4px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
 
-    --sidebar-background: 240 15% 8%;
-    --sidebar-foreground: 220 15% 75%;
-    --sidebar-primary: 270 50% 50%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 10% 25%;
+    --sidebar-primary: 270 60% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 10% 14%;
-    --sidebar-accent-foreground: 220 15% 80%;
-    --sidebar-border: 240 10% 14%;
-    --sidebar-ring: 270 50% 50%;
+    --sidebar-accent: 270 30% 94%;
+    --sidebar-accent-foreground: 270 60% 45%;
+    --sidebar-border: 240 5% 88%;
+    --sidebar-ring: 270 60% 55%;
+  }
+
+  .light {
+    /* Light theme - explicit class */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
+
+    --card: 0 0% 98%;
+    --card-foreground: 240 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+
+    --primary: 270 60% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 20%;
+
+    --muted: 240 5% 92%;
+    --muted-foreground: 240 5% 45%;
+
+    --accent: 270 30% 94%;
+    --accent-foreground: 270 60% 45%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 88%;
+    --input: 240 5% 88%;
+    --ring: 270 60% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(270 60% 55%) 0%, hsl(330 60% 50%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(270 50% 60%) 0%, hsl(200 70% 50%) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(240 10% 96%) 0%, hsl(270 20% 94%) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.6) 100%);
+    
+    --shadow-glow: 0 0 60px -15px hsl(270 60% 55% / 0.25);
+    --shadow-card: 0 4px 20px -4px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 10% 25%;
+    --sidebar-primary: 270 60% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 30% 94%;
+    --sidebar-accent-foreground: 270 60% 45%;
+    --sidebar-border: 240 5% 88%;
+    --sidebar-ring: 270 60% 55%;
   }
 
   .dark {
+    /* Dark theme */
     --background: 240 18% 5%;
     --foreground: 220 15% 90%;
 
@@ -86,6 +136,15 @@
     --border: 240 10% 12%;
     --input: 240 10% 12%;
     --ring: 270 55% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(270 50% 40% / 0.8) 0%, hsl(330 50% 40% / 0.6) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(270 40% 35% / 0.7) 0%, hsl(200 60% 40% / 0.5) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(240 20% 6%) 0%, hsl(270 25% 12%) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    
+    --shadow-glow: 0 0 80px -20px hsl(270 50% 40% / 0.3);
+    --shadow-card: 0 4px 30px -4px rgba(0, 0, 0, 0.4);
+    --shadow-elevated: 0 25px 50px -15px rgba(0, 0, 0, 0.5);
 
     --sidebar-background: 240 18% 5%;
     --sidebar-foreground: 220 15% 85%;
