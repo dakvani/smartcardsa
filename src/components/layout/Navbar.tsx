@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LayoutDashboard, Home } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
 
 const navLinks = [
   { name: "Templates", href: "/templates" },
@@ -19,10 +20,24 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const lastScrollY = useRef(0);
   
   const { scrollY } = useScroll();
   const headerOpacity = useTransform(scrollY, [0, 50], [0.6, 0.95]);
+
+  // Check auth state
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Handle scroll direction for show/hide
   useMotionValueEvent(scrollY, "change", (currentScrollY) => {
@@ -122,16 +137,37 @@ export function Navbar() {
         {/* Auth Buttons & Theme Toggle */}
         <div className="hidden md:flex items-center gap-3">
           <ThemeToggle />
-          <Link to="/auth" aria-label="Log in to your account">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              Log in
-            </Button>
-          </Link>
-          <Link to="/auth?signup=true" aria-label="Sign up for a free account">
-            <Button variant="gradient" size="sm" className="shadow-glow">
-              Sign up free
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <>
+              {location.pathname !== "/" && (
+                <Link to="/" aria-label="Go to homepage">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                    <Home className="w-4 h-4 mr-1" />
+                    Home
+                  </Button>
+                </Link>
+              )}
+              <Link to="/dashboard" aria-label="Go to dashboard">
+                <Button variant="gradient" size="sm" className="shadow-glow">
+                  <LayoutDashboard className="w-4 h-4 mr-1" />
+                  Dashboard
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/auth" aria-label="Log in to your account">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  Log in
+                </Button>
+              </Link>
+              <Link to="/auth?signup=true" aria-label="Sign up for a free account">
+                <Button variant="gradient" size="sm" className="shadow-glow">
+                  Sign up free
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -185,16 +221,37 @@ export function Navbar() {
               </motion.div>
             ))}
             <div className="pt-4 flex flex-col gap-2" role="group" aria-label="Authentication options">
-              <Link to="/auth" onClick={() => setMobileOpen(false)}>
-                <Button variant="outline" className="w-full border-border/50" aria-label="Log in to your account">
-                  Log in
-                </Button>
-              </Link>
-              <Link to="/auth?signup=true" onClick={() => setMobileOpen(false)}>
-                <Button variant="gradient" className="w-full shadow-glow" aria-label="Sign up for a free account">
-                  Sign up free
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  {location.pathname !== "/" && (
+                    <Link to="/" onClick={() => setMobileOpen(false)}>
+                      <Button variant="outline" className="w-full border-border/50" aria-label="Go to homepage">
+                        <Home className="w-4 h-4 mr-2" />
+                        Home
+                      </Button>
+                    </Link>
+                  )}
+                  <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
+                    <Button variant="gradient" className="w-full shadow-glow" aria-label="Go to dashboard">
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth" onClick={() => setMobileOpen(false)}>
+                    <Button variant="outline" className="w-full border-border/50" aria-label="Log in to your account">
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link to="/auth?signup=true" onClick={() => setMobileOpen(false)}>
+                    <Button variant="gradient" className="w-full shadow-glow" aria-label="Sign up for a free account">
+                      Sign up free
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </motion.div>
