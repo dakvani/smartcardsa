@@ -4,17 +4,21 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [isSignUp, setIsSignUp] = useState(searchParams.get("signup") === "true");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(
+    searchParams.get("signup") === "true" ? "signup" : "login"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState(searchParams.get("username") || "");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -41,7 +45,18 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isSignUp) {
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/settings`,
+        });
+
+        if (error) {
+          toast.error(error.message);
+        } else {
+          setResetSent(true);
+          toast.success("Password reset email sent! Check your inbox.");
+        }
+      } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -83,6 +98,31 @@ export default function Auth() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+      }
+    } catch (error: any) {
+      toast.error("Failed to sign in with Google");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const switchMode = (newMode: "login" | "signup" | "forgot") => {
+    setMode(newMode);
+    setResetSent(false);
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Form */}
@@ -105,81 +145,195 @@ export default function Auth() {
           </div>
 
           <h1 className="text-3xl font-bold mb-2">
-            {isSignUp ? "Create your account" : "Welcome back"}
+            {mode === "forgot" 
+              ? "Reset your password" 
+              : mode === "signup" 
+                ? "Create your account" 
+                : "Welcome back"}
           </h1>
           <p className="text-muted-foreground mb-8">
-            {isSignUp
-              ? "Start building your SmartCard in minutes."
-              : "Log in to manage your SmartCard."}
+            {mode === "forgot"
+              ? "Enter your email and we'll send you a reset link."
+              : mode === "signup"
+                ? "Start building your SmartCard in minutes."
+                : "Log in to manage your SmartCard."}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <label className="block text-sm font-medium mb-2">Username</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                    smartcard.online/
-                  </span>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
-                    placeholder="yourname"
-                    className="w-full h-12 pl-[140px] pr-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                    required
-                  />
+          {mode !== "forgot" && (
+            <>
+              {/* Google Login Button */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 mb-4"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
+              >
+                {googleLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                )}
+                Continue with Google
+              </Button>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
                 </div>
               </div>
-            )}
+            </>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full h-12 px-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full h-12 px-4 pr-12 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+          {mode === "forgot" && resetSent ? (
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
+              <h2 className="text-xl font-semibold">Check your email</h2>
+              <p className="text-muted-foreground">
+                We've sent a password reset link to <strong>{email}</strong>
+              </p>
+              <Button variant="outline" onClick={() => switchMode("login")} className="mt-4">
+                Back to login
+              </Button>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === "signup" && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Username</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      smartcard.online/
+                    </span>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
+                      placeholder="yourname"
+                      className="w-full h-12 pl-[140px] pr-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
 
-            <Button type="submit" variant="gradient" className="w-full h-12" disabled={loading}>
-              {loading ? "Loading..." : isSignUp ? "Create account" : "Log in"}
-            </Button>
-          </form>
+              <div>
+                <label className="block text-sm font-medium mb-2">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full h-12 px-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  required
+                />
+              </div>
+
+              {mode !== "forgot" && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium">Password</label>
+                    {mode === "login" && (
+                      <button
+                        type="button"
+                        onClick={() => switchMode("forgot")}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full h-12 px-4 pr-12 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <Button type="submit" variant="gradient" className="w-full h-12" disabled={loading}>
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : mode === "forgot" ? (
+                  "Send reset link"
+                ) : mode === "signup" ? (
+                  "Create account"
+                ) : (
+                  "Log in"
+                )}
+              </Button>
+            </form>
+          )}
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary font-medium hover:underline"
-            >
-              {isSignUp ? "Log in" : "Sign up"}
-            </button>
+            {mode === "forgot" ? (
+              <>
+                Remember your password?{" "}
+                <button
+                  onClick={() => switchMode("login")}
+                  className="text-primary font-medium hover:underline"
+                >
+                  Back to login
+                </button>
+              </>
+            ) : mode === "signup" ? (
+              <>
+                Already have an account?{" "}
+                <button
+                  onClick={() => switchMode("login")}
+                  className="text-primary font-medium hover:underline"
+                >
+                  Log in
+                </button>
+              </>
+            ) : (
+              <>
+                Don't have an account?{" "}
+                <button
+                  onClick={() => switchMode("signup")}
+                  className="text-primary font-medium hover:underline"
+                >
+                  Sign up
+                </button>
+              </>
+            )}
           </p>
         </motion.div>
       </div>
