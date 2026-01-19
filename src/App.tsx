@@ -11,6 +11,7 @@ import Products from "./pages/Products";
 import Marketplace from "./pages/Marketplace";
 import Learn from "./pages/Learn";
 import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 import PublicProfile from "./pages/PublicProfile";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/learn" element={<Learn />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/:username" element={<PublicProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
