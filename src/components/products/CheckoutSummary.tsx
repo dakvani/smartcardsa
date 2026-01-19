@@ -116,7 +116,7 @@ export function CheckoutSummary({ cart, onUpdateQuantity, onRemoveItem, onBack, 
                 <div className="flex-1">
                   <h4 className="font-medium">{item.product.name}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {item.customization.name && `Name: ${item.customization.name}`}
+                    {item.customization.front.name && `Name: ${item.customization.front.name}`}
                     {item.customization.linkedProfileUsername && ` • @${item.customization.linkedProfileUsername}`}
                   </p>
                   <div className="flex items-center gap-3 mt-2">

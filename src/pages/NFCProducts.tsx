@@ -27,10 +27,26 @@ export default function NFCProducts() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    // Get initial user
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUserId(user?.id || null);
     });
-  }, []);
+
+    // Listen for auth state changes (e.g., after login redirect)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUserId(session?.user?.id || null);
+      
+      // If user just logged in and we're at checkout with items, show success
+      if (event === 'SIGNED_IN' && step === 'checkout' && cart.length > 0) {
+        toast({
+          title: "Logged in successfully!",
+          description: "You can now complete your order.",
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [step, cart.length, toast]);
 
   const handleProductSelect = (product: NFCProduct) => {
     setSelectedProduct(product);
@@ -107,13 +123,19 @@ export default function NFCProducts() {
     postalCode: string;
     country: string;
   }) => {
-    if (!userId) {
+    // Check auth state again before placing order
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      // Store cart in session storage so it persists after login
+      sessionStorage.setItem('nfc_cart', JSON.stringify(cart));
+      sessionStorage.setItem('nfc_shipping', JSON.stringify(shippingInfo));
+      
       toast({
-        title: "Please log in",
-        description: "You need to be logged in to place an order.",
-        variant: "destructive",
+        title: "Please log in to continue",
+        description: "You'll be redirected back to complete your order after logging in.",
       });
-      navigate("/auth");
+      navigate("/auth", { state: { returnTo: '/nfc-products', step: 'checkout' } });
       return;
     }
 
@@ -136,7 +158,16 @@ export default function NFCProducts() {
             category: item.product.category,
           },
           customization: {
-            name: item.customization.name,
+            front: {
+              name: item.customization.front.name,
+              title: item.customization.front.title,
+              backgroundColor: item.customization.front.backgroundColor,
+            },
+            back: {
+              name: item.customization.back.name,
+              title: item.customization.back.title,
+              backgroundColor: item.customization.back.backgroundColor,
+            },
             linkedProfileUsername: item.customization.linkedProfileUsername,
           },
           quantity: item.quantity,
