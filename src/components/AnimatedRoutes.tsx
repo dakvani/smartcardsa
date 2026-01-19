@@ -4,6 +4,7 @@ import { PageTransition } from "./PageTransition";
 import { ScrollToTop } from "./ScrollToTop";
 import { ScrollProgress } from "./ScrollProgress";
 import { FloatingActionButton } from "./FloatingActionButton";
+import { BackToTopButton } from "./BackToTopButton";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Pricing from "@/pages/Pricing";
@@ -27,6 +28,7 @@ export function AnimatedRoutes() {
       <ScrollProgress />
       <ScrollToTop />
       <FloatingActionButton />
+      <BackToTopButton />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><Index /></PageTransition>} />
