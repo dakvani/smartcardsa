@@ -326,6 +326,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_theme_presets: {
+        Row: {
+          animation_intensity: number | null
+          animation_speed: number | null
+          animation_type: string | null
+          created_at: string
+          custom_accent_color: string | null
+          custom_bg_color: string | null
+          gradient_direction: string | null
+          id: string
+          name: string
+          theme_gradient: string
+          theme_name: string
+          user_id: string
+        }
+        Insert: {
+          animation_intensity?: number | null
+          animation_speed?: number | null
+          animation_type?: string | null
+          created_at?: string
+          custom_accent_color?: string | null
+          custom_bg_color?: string | null
+          gradient_direction?: string | null
+          id?: string
+          name: string
+          theme_gradient: string
+          theme_name: string
+          user_id: string
+        }
+        Update: {
+          animation_intensity?: number | null
+          animation_speed?: number | null
+          animation_type?: string | null
+          created_at?: string
+          custom_accent_color?: string | null
+          custom_bg_color?: string | null
+          gradient_direction?: string | null
+          id?: string
+          name?: string
+          theme_gradient?: string
+          theme_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
