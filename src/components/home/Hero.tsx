@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { SubmitButton } from "@/components/ui/form-feedback";
 
 export function Hero() {
   const [username, setUsername] = useState("");
+  const [formStatus, setFormStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const navigate = useNavigate();
   
   const { scrollYProgress } = useScroll();
@@ -13,11 +14,21 @@ export function Hero() {
   const contentOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0.3]);
   const contentScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
 
-  const handleClaim = (e: React.FormEvent) => {
+  const handleClaim = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim()) {
+    if (!username.trim()) return;
+    
+    setFormStatus("loading");
+    
+    // Simulate a brief loading state for micro-interaction feel
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    setFormStatus("success");
+    
+    // Navigate after success animation
+    setTimeout(() => {
       navigate(`/auth?signup=true&username=${encodeURIComponent(username.trim())}`);
-    }
+    }, 600);
   };
 
   return (
@@ -101,13 +112,17 @@ export function Hero() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
                 placeholder="yourname"
-                className="w-full h-14 pl-[156px] pr-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary/30 transition-all"
+                disabled={formStatus === "loading" || formStatus === "success"}
+                className="w-full h-14 pl-[156px] pr-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary/30 transition-all disabled:opacity-50"
               />
             </div>
-            <Button type="submit" variant="hero" className="w-full sm:w-auto shadow-glow">
-              Claim your SmartCard
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+            <SubmitButton
+              status={formStatus}
+              idleText="Claim your SmartCard"
+              loadingText="Claiming..."
+              successText="Redirecting..."
+              className="w-full sm:w-auto h-14 px-6"
+            />
           </motion.form>
 
           {/* Social Proof */}
