@@ -1,0 +1,327 @@
+import { useState, useEffect } from "react";
+import { Accessibility, Type, Zap, Volume2, Check } from "lucide-react";
+import { motion } from "framer-motion";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useTheme, Theme } from "@/components/ThemeToggle";
+
+interface AccessibilityPreferences {
+  fontSize: "small" | "medium" | "large" | "extra-large";
+  reducedMotion: boolean;
+  screenReaderOptimized: boolean;
+  highContrastText: boolean;
+  focusIndicators: boolean;
+  lineHeight: number;
+}
+
+const fontSizeConfig = {
+  small: { label: "Small", value: "14px", scale: 0.875 },
+  medium: { label: "Medium", value: "16px", scale: 1 },
+  large: { label: "Large", value: "18px", scale: 1.125 },
+  "extra-large": { label: "Extra Large", value: "20px", scale: 1.25 },
+};
+
+const defaultPreferences: AccessibilityPreferences = {
+  fontSize: "medium",
+  reducedMotion: false,
+  screenReaderOptimized: false,
+  highContrastText: false,
+  focusIndicators: true,
+  lineHeight: 1.5,
+};
+
+export function AccessibilitySettings() {
+  const { theme, setTheme } = useTheme();
+  const [preferences, setPreferences] = useState<AccessibilityPreferences>(defaultPreferences);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("accessibility-preferences");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setPreferences(parsed);
+      applyPreferences(parsed);
+    }
+
+    // Check for system reduced motion preference
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion && !saved) {
+      setPreferences(prev => ({ ...prev, reducedMotion: true }));
+    }
+  }, []);
+
+  const applyPreferences = (prefs: AccessibilityPreferences) => {
+    const root = document.documentElement;
+    
+    // Apply font size
+    root.style.setProperty("--accessibility-font-scale", String(fontSizeConfig[prefs.fontSize].scale));
+    root.classList.toggle("accessibility-large-text", prefs.fontSize === "large" || prefs.fontSize === "extra-large");
+    
+    // Apply reduced motion
+    root.classList.toggle("reduce-motion", prefs.reducedMotion);
+    
+    // Apply screen reader optimizations
+    root.classList.toggle("screen-reader-optimized", prefs.screenReaderOptimized);
+    
+    // Apply high contrast text
+    root.classList.toggle("high-contrast-text", prefs.highContrastText);
+    
+    // Apply enhanced focus indicators
+    root.classList.toggle("enhanced-focus", prefs.focusIndicators);
+    
+    // Apply line height
+    root.style.setProperty("--accessibility-line-height", String(prefs.lineHeight));
+  };
+
+  const updatePreference = <K extends keyof AccessibilityPreferences>(
+    key: K,
+    value: AccessibilityPreferences[K]
+  ) => {
+    const newPreferences = { ...preferences, [key]: value };
+    setPreferences(newPreferences);
+    setHasChanges(true);
+    applyPreferences(newPreferences);
+  };
+
+  const savePreferences = async () => {
+    setSaving(true);
+    try {
+      localStorage.setItem("accessibility-preferences", JSON.stringify(preferences));
+      
+      // Also save to database if user is logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // We'd need to add an accessibility_preferences column to profiles
+        // For now, we just save to localStorage
+      }
+      
+      setHasChanges(false);
+      toast.success("Accessibility preferences saved");
+    } catch (error) {
+      toast.error("Failed to save preferences");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetToDefaults = () => {
+    setPreferences(defaultPreferences);
+    applyPreferences(defaultPreferences);
+    localStorage.removeItem("accessibility-preferences");
+    setHasChanges(false);
+    toast.success("Preferences reset to defaults");
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Font Size */}
+      <div className="bg-background rounded-2xl border border-border p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Type className="w-5 h-5" />
+          Text Size & Readability
+        </h2>
+        
+        <div className="space-y-6">
+          <div>
+            <Label className="text-sm font-medium mb-3 block">Font Size</Label>
+            <RadioGroup
+              value={preferences.fontSize}
+              onValueChange={(value) => updatePreference("fontSize", value as AccessibilityPreferences["fontSize"])}
+              className="grid grid-cols-2 gap-3"
+            >
+              {Object.entries(fontSizeConfig).map(([key, config]) => (
+                <motion.div
+                  key={key}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Label
+                    htmlFor={`font-${key}`}
+                    className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${
+                      preferences.fontSize === key
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value={key} id={`font-${key}`} />
+                      <span style={{ fontSize: config.value }}>{config.label}</span>
+                    </div>
+                    {preferences.fontSize === key && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                  </Label>
+                </motion.div>
+              ))}
+            </RadioGroup>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-medium">Line Height</Label>
+              <span className="text-sm text-muted-foreground">{preferences.lineHeight.toFixed(1)}</span>
+            </div>
+            <Slider
+              value={[preferences.lineHeight]}
+              onValueChange={([value]) => updatePreference("lineHeight", value)}
+              min={1}
+              max={2}
+              step={0.1}
+              className="w-full"
+            />
+            <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+              <span>Compact</span>
+              <span>Spacious</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+            <div className="flex items-center gap-3">
+              <Type className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium">High Contrast Text</p>
+                <p className="text-sm text-muted-foreground">Increase text contrast for better readability</p>
+              </div>
+            </div>
+            <Switch
+              checked={preferences.highContrastText}
+              onCheckedChange={(checked) => updatePreference("highContrastText", checked)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Motion & Animations */}
+      <div className="bg-background rounded-2xl border border-border p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5" />
+          Motion & Animations
+        </h2>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+            <div className="flex items-center gap-3">
+              <Zap className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Reduce Motion</p>
+                <p className="text-sm text-muted-foreground">Minimize animations and transitions throughout the app</p>
+              </div>
+            </div>
+            <Switch
+              checked={preferences.reducedMotion}
+              onCheckedChange={(checked) => updatePreference("reducedMotion", checked)}
+            />
+          </div>
+          
+          {preferences.reducedMotion && (
+            <motion.p
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="text-sm text-muted-foreground bg-primary/5 p-3 rounded-lg"
+            >
+              ✓ Animations are now minimized. Page transitions, hover effects, and decorative animations will be reduced or disabled.
+            </motion.p>
+          )}
+        </div>
+      </div>
+
+      {/* Screen Reader & Assistive Technology */}
+      <div className="bg-background rounded-2xl border border-border p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Volume2 className="w-5 h-5" />
+          Screen Reader & Assistive Technology
+        </h2>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+            <div className="flex items-center gap-3">
+              <Volume2 className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Screen Reader Optimizations</p>
+                <p className="text-sm text-muted-foreground">Add extra labels and improve navigation for screen readers</p>
+              </div>
+            </div>
+            <Switch
+              checked={preferences.screenReaderOptimized}
+              onCheckedChange={(checked) => updatePreference("screenReaderOptimized", checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+            <div className="flex items-center gap-3">
+              <Accessibility className="w-5 h-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Enhanced Focus Indicators</p>
+                <p className="text-sm text-muted-foreground">Show larger, more visible focus rings when using keyboard navigation</p>
+              </div>
+            </div>
+            <Switch
+              checked={preferences.focusIndicators}
+              onCheckedChange={(checked) => updatePreference("focusIndicators", checked)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Theme Shortcuts */}
+      <div className="bg-background rounded-2xl border border-border p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Accessibility className="w-5 h-5" />
+          Accessibility Themes
+        </h2>
+        
+        <p className="text-sm text-muted-foreground mb-4">
+          Quick access to color-blind friendly themes. You can also access these from the theme menu in the navigation bar.
+        </p>
+        
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { key: "high-contrast", label: "High Contrast", desc: "Maximum visibility" },
+            { key: "protanopia", label: "Protanopia", desc: "Red-blind friendly" },
+            { key: "deuteranopia", label: "Deuteranopia", desc: "Green-blind friendly" },
+            { key: "tritanopia", label: "Tritanopia", desc: "Blue-blind friendly" },
+          ].map((item) => (
+            <motion.button
+              key={item.key}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setTheme(item.key as Theme)}
+              className={`p-4 rounded-xl border text-left transition-colors ${
+                theme === item.key
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <p className="font-medium">{item.label}</p>
+              <p className="text-xs text-muted-foreground">{item.desc}</p>
+              {theme === item.key && (
+                <Check className="w-4 h-4 text-primary mt-2" />
+              )}
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/* Save/Reset Buttons */}
+      <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+        <Button variant="outline" onClick={resetToDefaults}>
+          Reset to Defaults
+        </Button>
+        <Button 
+          variant="gradient" 
+          onClick={savePreferences}
+          disabled={!hasChanges || saving}
+        >
+          {saving ? "Saving..." : hasChanges ? "Save Preferences" : "Saved"}
+        </Button>
+      </div>
+    </div>
+  );
+}
