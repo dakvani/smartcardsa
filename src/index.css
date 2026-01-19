@@ -49,6 +49,23 @@
   box-shadow: 0 0 0 6px hsl(var(--primary) / 0.25) !important;
 }
 
+/* Accessibility: Dyslexia-Friendly Font */
+.dyslexia-font,
+.dyslexia-font * {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
+  letter-spacing: 0.05em;
+  word-spacing: 0.1em;
+}
+
+.dyslexia-font h1,
+.dyslexia-font h2,
+.dyslexia-font h3,
+.dyslexia-font h4,
+.dyslexia-font h5,
+.dyslexia-font h6 {
+  font-weight: 700 !important;
+}
+
 /* Accessibility: Screen Reader Optimizations */
 .screen-reader-optimized .sr-only-enhanced {
   position: static !important;
