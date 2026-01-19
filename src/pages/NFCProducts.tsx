@@ -1,0 +1,262 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { Button } from "@/components/ui/button";
+import { ProductCard } from "@/components/products/ProductCard";
+import { DesignCustomizer } from "@/components/products/DesignCustomizer";
+import { LivePreview } from "@/components/products/LivePreview";
+import { CheckoutSummary } from "@/components/products/CheckoutSummary";
+import { nfcProducts, defaultCustomization, CartItem, DesignCustomization, NFCProduct } from "@/components/products/types";
+import { ArrowRight, ShoppingCart, ArrowLeft, Wifi } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+type Step = 'select' | 'customize' | 'checkout';
+
+export default function NFCProducts() {
+  const { toast } = useToast();
+  const [step, setStep] = useState<Step>('select');
+  const [selectedProduct, setSelectedProduct] = useState<NFCProduct | null>(null);
+  const [customization, setCustomization] = useState<DesignCustomization>(defaultCustomization);
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  const handleProductSelect = (product: NFCProduct) => {
+    setSelectedProduct(product);
+    setCustomization(defaultCustomization);
+  };
+
+  const handleContinueToCustomize = () => {
+    if (!selectedProduct) {
+      toast({
+        title: "Select a product",
+        description: "Please select an NFC product to customize.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setStep('customize');
+  };
+
+  const handleAddToCart = () => {
+    if (!selectedProduct) return;
+    
+    setCart([...cart, {
+      product: selectedProduct,
+      customization: { ...customization },
+      quantity: 1,
+    }]);
+    
+    toast({
+      title: "Added to cart!",
+      description: `${selectedProduct.name} has been added to your cart.`,
+    });
+  };
+
+  const handleProceedToCheckout = () => {
+    if (cart.length === 0) {
+      handleAddToCart();
+    }
+    setStep('checkout');
+  };
+
+  const handleUpdateQuantity = (index: number, quantity: number) => {
+    const newCart = [...cart];
+    newCart[index].quantity = quantity;
+    setCart(newCart);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setCart(cart.filter((_, i) => i !== index));
+  };
+
+  const handleBack = () => {
+    if (step === 'customize') {
+      setStep('select');
+    } else if (step === 'checkout') {
+      setStep('customize');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Navbar />
+      <main className="flex-1 pt-24 pb-16">
+        <div className="container mx-auto px-4">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
+              <Wifi className="w-4 h-4" />
+              <span className="text-sm font-medium">NFC Products</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Share your profile with a <span className="gradient-text">tap</span>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Custom NFC products that link directly to your SmartCard profile. Design your own and start networking smarter.
+            </p>
+          </motion.div>
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-center gap-4 mb-12">
+            {['select', 'customize', 'checkout'].map((s, index) => (
+              <div key={s} className="flex items-center">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-colors ${
+                    step === s
+                      ? "bg-primary text-primary-foreground"
+                      : (step === 'customize' && s === 'select') || (step === 'checkout' && (s === 'select' || s === 'customize'))
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {index + 1}
+                </div>
+                <span className={`ml-2 text-sm font-medium capitalize ${step === s ? "text-foreground" : "text-muted-foreground"}`}>
+                  {s}
+                </span>
+                {index < 2 && (
+                  <ArrowRight className="w-4 h-4 mx-4 text-muted-foreground" />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Cart indicator */}
+          {cart.length > 0 && step !== 'checkout' && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="fixed top-24 right-4 z-50"
+            >
+              <Button
+                onClick={() => setStep('checkout')}
+                variant="gradient"
+                className="shadow-lg"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Cart ({cart.length})
+              </Button>
+            </motion.div>
+          )}
+
+          <AnimatePresence mode="wait">
+            {/* Step 1: Product Selection */}
+            {step === 'select' && (
+              <motion.div
+                key="select"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+                  {nfcProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isSelected={selectedProduct?.id === product.id}
+                      onSelect={() => handleProductSelect(product)}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex justify-center">
+                  <Button
+                    variant="gradient"
+                    size="lg"
+                    onClick={handleContinueToCustomize}
+                    disabled={!selectedProduct}
+                  >
+                    Continue to Customize
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 2: Customization */}
+            {step === 'customize' && selectedProduct && (
+              <motion.div
+                key="customize"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Customizer Panel */}
+                  <div className="bg-card rounded-2xl border border-border p-6">
+                    <DesignCustomizer
+                      product={selectedProduct}
+                      customization={customization}
+                      onChange={setCustomization}
+                    />
+                  </div>
+
+                  {/* Live Preview */}
+                  <div className="lg:sticky lg:top-24 h-fit">
+                    <LivePreview
+                      product={selectedProduct}
+                      customization={customization}
+                    />
+
+                    {/* Actions */}
+                    <div className="flex flex-col sm:flex-row gap-4 mt-6">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={handleBack}
+                      >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={handleAddToCart}
+                      >
+                        <ShoppingCart className="w-4 h-4 mr-2" />
+                        Add to Cart
+                      </Button>
+                      <Button
+                        variant="gradient"
+                        className="flex-1"
+                        onClick={handleProceedToCheckout}
+                      >
+                        Checkout
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 3: Checkout */}
+            {step === 'checkout' && (
+              <motion.div
+                key="checkout"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <CheckoutSummary
+                  cart={cart}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  onRemoveItem={handleRemoveItem}
+                  onBack={handleBack}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
