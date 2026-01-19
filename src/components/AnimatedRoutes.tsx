@@ -13,6 +13,7 @@ import Products from "@/pages/Products";
 import NFCProducts from "@/pages/NFCProducts";
 import OrderHistory from "@/pages/OrderHistory";
 import AdminOrders from "@/pages/AdminOrders";
+import AdminDashboard from "@/pages/AdminDashboard";
 import Marketplace from "@/pages/Marketplace";
 import Learn from "@/pages/Learn";
 import Dashboard from "@/pages/Dashboard";
@@ -38,6 +39,7 @@ export function AnimatedRoutes() {
           <Route path="/products" element={<PageTransition><Products /></PageTransition>} />
           <Route path="/nfc-products" element={<PageTransition><NFCProducts /></PageTransition>} />
           <Route path="/order-history" element={<PageTransition><OrderHistory /></PageTransition>} />
+          <Route path="/admin" element={<PageTransition><AdminDashboard /></PageTransition>} />
           <Route path="/admin/orders" element={<PageTransition><AdminOrders /></PageTransition>} />
           <Route path="/marketplace" element={<PageTransition><Marketplace /></PageTransition>} />
           <Route path="/learn" element={<PageTransition><Learn /></PageTransition>} />
