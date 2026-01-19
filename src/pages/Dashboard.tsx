@@ -33,6 +33,7 @@ import { QRCodeGenerator } from "@/components/dashboard/QRCodeGenerator";
 import { EmailSubscribers } from "@/components/dashboard/EmailSubscribers";
 import { ProfileTemplates } from "@/components/dashboard/ProfileTemplates";
 import { LinkGroupManager, LinkGroup } from "@/components/dashboard/LinkGroupManager";
+import { FavoritePresets } from "@/components/dashboard/FavoritePresets";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Profile {
@@ -618,6 +619,27 @@ export default function Dashboard() {
                       updateProfile(updates as Partial<Profile>);
                     }}
                   />
+
+                  {/* Favorite Presets */}
+                  <div className="border-t border-border pt-6">
+                    <FavoritePresets
+                      userId={user.id}
+                      currentTheme={{
+                        theme_name: profile.theme_name,
+                        theme_gradient: profile.theme_gradient,
+                        custom_bg_color: profile.custom_bg_color,
+                        custom_accent_color: profile.custom_accent_color,
+                        gradient_direction: profile.gradient_direction || "to-b",
+                        animation_type: profile.animation_type,
+                        animation_speed: profile.animation_speed || 1,
+                        animation_intensity: profile.animation_intensity || 1,
+                      }}
+                      onApply={(preset) => {
+                        setProfile({ ...profile, ...preset } as Profile);
+                        updateProfile(preset as Partial<Profile>);
+                      }}
+                    />
+                  </div>
 
                   {/* Profile Templates */}
                   <div className="border-t border-border pt-6">
