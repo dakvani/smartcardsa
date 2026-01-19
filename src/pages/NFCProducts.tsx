@@ -126,7 +126,7 @@ export default function NFCProducts() {
       const { error } = await supabase.from("nfc_orders").insert({
         user_id: userId,
         order_number: orderNumber,
-        status: "pending",
+        status: "processing",
         items: cart.map(item => ({
           product: {
             id: item.product.id,
@@ -149,9 +149,23 @@ export default function NFCProducts() {
 
       if (error) throw error;
 
+      // Send order confirmation email
+      try {
+        await supabase.functions.invoke("send-order-email", {
+          body: {
+            to: shippingInfo.email,
+            orderNumber,
+            status: "processing",
+            customerName: shippingInfo.name,
+          },
+        });
+      } catch (emailError) {
+        console.log("Email notification (test mode):", emailError);
+      }
+
       toast({
         title: "Order placed!",
-        description: `Order #${orderNumber} has been submitted.`,
+        description: `Order #${orderNumber} has been submitted. Check your email for confirmation.`,
       });
 
       setCart([]);
