@@ -185,6 +185,7 @@ export type Database = {
       }
       profile_templates: {
         Row: {
+          animation_type: string | null
           category: string
           created_at: string
           description: string | null
@@ -197,6 +198,7 @@ export type Database = {
           theme_name: string
         }
         Insert: {
+          animation_type?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -209,6 +211,7 @@ export type Database = {
           theme_name: string
         }
         Update: {
+          animation_type?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -256,6 +259,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          animation_type: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
@@ -273,6 +277,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          animation_type?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -290,6 +295,7 @@ export type Database = {
           username: string
         }
         Update: {
+          animation_type?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null

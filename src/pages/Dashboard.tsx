@@ -27,6 +27,7 @@ import { SocialLinksEditor, SocialLinks } from "@/components/dashboard/SocialLin
 import { SortableLinkItem } from "@/components/dashboard/SortableLinkItem";
 import { SocialIcons } from "@/components/profile/SocialIcons";
 import { AnalyticsCharts } from "@/components/dashboard/AnalyticsCharts";
+import { AnimatedBackground } from "@/components/profile/AnimatedBackground";
 import { ThemeCustomizer } from "@/components/dashboard/ThemeCustomizer";
 import { QRCodeGenerator } from "@/components/dashboard/QRCodeGenerator";
 import { EmailSubscribers } from "@/components/dashboard/EmailSubscribers";
@@ -48,6 +49,7 @@ interface Profile {
   custom_accent_color: string | null;
   gradient_direction: string;
   email_collection_enabled: boolean;
+  animation_type: string | null;
 }
 
 interface LinkItem {
@@ -606,6 +608,7 @@ export default function Dashboard() {
                     customBgColor={profile.custom_bg_color}
                     customAccentColor={profile.custom_accent_color}
                     gradientDirection={profile.gradient_direction || "to-b"}
+                    animationType={profile.animation_type}
                     onUpdate={(updates) => {
                       setProfile({ ...profile, ...updates } as Profile);
                       updateProfile(updates as Partial<Profile>);
@@ -685,10 +688,15 @@ export default function Dashboard() {
             <div className="bg-background rounded-2xl border border-border p-4">
               <p className="text-sm text-muted-foreground text-center mb-4">Live Preview</p>
               <div 
-                className={`rounded-[2rem] p-6 min-h-[600px] overflow-hidden ${!previewStyle ? `bg-gradient-${profile.gradient_direction || 'to-b'} ${previewGradient}` : ''}`}
+                className={`rounded-[2rem] p-6 min-h-[600px] overflow-hidden relative ${!previewStyle ? `bg-gradient-${profile.gradient_direction || 'to-b'} ${previewGradient}` : ''}`}
                 style={previewStyle}
               >
-                <div className="text-center mb-6">
+                {/* Animated Background Preview */}
+                <div className="absolute inset-0 rounded-[2rem] overflow-hidden">
+                  <AnimatedBackground animationType={profile.animation_type} />
+                </div>
+                
+                <div className="text-center mb-6 relative z-10">
                   <div className="w-20 h-20 mx-auto rounded-full bg-primary-foreground/20 backdrop-blur mb-3 flex items-center justify-center overflow-hidden">
                     {profile.avatar_url ? (
                       <img src={profile.avatar_url} alt={profile.title} className="w-full h-full object-cover" />
@@ -704,7 +712,7 @@ export default function Dashboard() {
                   )}
                   <SocialIcons socialLinks={profile.social_links || {}} />
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 relative z-10">
                   {links.filter(l => l.visible).map(link => (
                     <div key={link.id} className="flex items-center gap-3 py-3 px-4 rounded-xl bg-primary-foreground/20 backdrop-blur">
                       {link.thumbnail_url && (

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, Palette, Briefcase, Camera } from "lucide-react";
+import { Loader2, Check, Palette, Briefcase, Camera, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 interface Template {
   id: string;
@@ -13,6 +14,7 @@ interface Template {
   theme_gradient: string;
   gradient_direction: string;
   is_premium: boolean;
+  animation_type: string | null;
 }
 
 interface ProfileTemplatesProps {
@@ -22,6 +24,7 @@ interface ProfileTemplatesProps {
     gradient_direction: string;
     custom_bg_color: null;
     custom_accent_color: null;
+    animation_type: string | null;
   }) => void;
   currentThemeName: string;
 }
@@ -36,6 +39,17 @@ const categoryLabels: Record<string, string> = {
   creator: "Creator",
   business: "Business",
   portfolio: "Portfolio",
+};
+
+const animationLabels: Record<string, string> = {
+  pulse: "✨ Pulse",
+  particles: "⭐ Particles",
+  wave: "🌊 Wave",
+  "gradient-shift": "🌈 Shift",
+  glow: "💫 Glow",
+  orbs: "🔮 Orbs",
+  shimmer: "✦ Shimmer",
+  neon: "💡 Neon",
 };
 
 export function ProfileTemplates({ onApply, currentThemeName }: ProfileTemplatesProps) {
@@ -73,6 +87,7 @@ export function ProfileTemplates({ onApply, currentThemeName }: ProfileTemplates
         gradient_direction: template.gradient_direction || "to-b",
         custom_bg_color: null,
         custom_accent_color: null,
+        animation_type: template.animation_type,
       });
       toast.success(`Applied "${template.name}" template!`);
     } finally {
@@ -138,9 +153,16 @@ export function ProfileTemplates({ onApply, currentThemeName }: ProfileTemplates
             >
               {/* Preview */}
               <div 
-                className={`h-24 bg-gradient-${template.gradient_direction} ${template.theme_gradient}`}
+                className={`h-24 bg-gradient-${template.gradient_direction} ${template.theme_gradient} relative overflow-hidden`}
               >
-                <div className="h-full w-full flex items-center justify-center">
+                {template.animation_type && (
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    animate={{ x: ["-100%", "100%"] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                  />
+                )}
+                <div className="h-full w-full flex items-center justify-center relative z-10">
                   <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur" />
                 </div>
               </div>
@@ -152,6 +174,12 @@ export function ProfileTemplates({ onApply, currentThemeName }: ProfileTemplates
                     <div className="flex items-center gap-2 mb-1">
                       <Icon className="w-4 h-4 text-muted-foreground" />
                       <h4 className="font-medium text-sm">{template.name}</h4>
+                      {template.animation_type && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          {animationLabels[template.animation_type] || "Animated"}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">{template.description}</p>
                   </div>

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Loader2, Star } from "lucide-react";
 import { SocialIcons } from "@/components/profile/SocialIcons";
 import { EmailSignup } from "@/components/profile/EmailSignup";
+import { AnimatedBackground } from "@/components/profile/AnimatedBackground";
 import { parseUserAgent } from "@/lib/userAgentParser";
 
 interface SocialLinks {
@@ -30,6 +31,7 @@ interface Profile {
   custom_accent_color: string | null;
   gradient_direction: string;
   email_collection_enabled: boolean;
+  animation_type: string | null;
 }
 
 interface LinkItem {
@@ -221,10 +223,13 @@ export default function PublicProfile() {
 
   return (
     <div 
-      className={`min-h-screen py-12 px-4 ${bgClass}`}
+      className={`min-h-screen py-12 px-4 relative overflow-hidden ${bgClass}`}
       style={bgStyle}
     >
-      <div className="max-w-md mx-auto">
+      {/* Animated Background */}
+      <AnimatedBackground animationType={profile.animation_type} />
+      
+      <div className="max-w-md mx-auto relative z-10">
         {/* Profile Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

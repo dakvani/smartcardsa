@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Palette, ChevronDown, ChevronUp } from "lucide-react";
+import { Palette, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ThemeCustomizerProps {
   themeName: string;
@@ -7,12 +8,14 @@ interface ThemeCustomizerProps {
   customBgColor: string | null;
   customAccentColor: string | null;
   gradientDirection: string;
+  animationType: string | null;
   onUpdate: (updates: {
     theme_name?: string;
     theme_gradient?: string;
     custom_bg_color?: string | null;
     custom_accent_color?: string | null;
     gradient_direction?: string;
+    animation_type?: string | null;
   }) => void;
 }
 
@@ -40,12 +43,25 @@ const gradientDirections = [
   { value: "to-tl", label: "↖ Diagonal Up" },
 ];
 
+const animationTypes = [
+  { value: null, label: "None", icon: "✕" },
+  { value: "pulse", label: "Pulse", icon: "✨" },
+  { value: "particles", label: "Particles", icon: "⭐" },
+  { value: "wave", label: "Wave", icon: "🌊" },
+  { value: "gradient-shift", label: "Shift", icon: "🌈" },
+  { value: "glow", label: "Glow", icon: "💫" },
+  { value: "orbs", label: "Orbs", icon: "🔮" },
+  { value: "shimmer", label: "Shimmer", icon: "✦" },
+  { value: "neon", label: "Neon", icon: "💡" },
+];
+
 export function ThemeCustomizer({
   themeName,
   themeGradient,
   customBgColor,
   customAccentColor,
   gradientDirection,
+  animationType,
   onUpdate,
 }: ThemeCustomizerProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -58,7 +74,12 @@ export function ThemeCustomizer({
       theme_gradient: theme.gradient,
       custom_bg_color: null,
       custom_accent_color: null,
+      animation_type: null,
     });
+  };
+
+  const handleAnimationChange = (type: string | null) => {
+    onUpdate({ animation_type: type });
   };
 
   const handleCustomColorChange = (type: "bg" | "accent", color: string) => {
@@ -186,10 +207,53 @@ export function ThemeCustomizer({
             </div>
           </div>
 
+          {/* Animation Type */}
+          <div>
+            <label className="block text-xs text-muted-foreground mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              Animation Effect
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {animationTypes.map((anim) => (
+                <button
+                  key={anim.value || "none"}
+                  onClick={() => handleAnimationChange(anim.value)}
+                  className={`px-3 py-2 text-xs rounded-lg border transition-all flex items-center justify-center gap-1 ${
+                    animationType === anim.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-input hover:border-primary/50"
+                  }`}
+                >
+                  <span>{anim.icon}</span>
+                  <span>{anim.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Animation Preview */}
+          {animationType && (
+            <div>
+              <label className="block text-xs text-muted-foreground mb-2">Animation Preview</label>
+              <div 
+                className={`h-20 rounded-xl relative overflow-hidden bg-gradient-to-b ${themeGradient || 'from-indigo-900 via-purple-900 to-pink-900'}`}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  animate={{ x: ["-100%", "100%"] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 0.5 }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur" />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Preview */}
           {isCustom && customBgColor && (
             <div>
-              <label className="block text-xs text-muted-foreground mb-2">Preview</label>
+              <label className="block text-xs text-muted-foreground mb-2">Color Preview</label>
               <div
                 className="h-16 rounded-xl"
                 style={{
