@@ -188,22 +188,28 @@ export default function NFCProducts() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 pt-24 pb-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 max-w-7xl">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
+            className="text-center mb-12"
           >
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
-              <Wifi className="w-4 h-4" />
-              <span className="text-sm font-medium">NFC Products</span>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Share your profile with a <span className="gradient-text">tap</span>
+            <motion.div 
+              className="inline-flex items-center gap-2 bg-primary/10 text-primary px-5 py-2.5 rounded-full mb-6"
+              animate={{ scale: [1, 1.02, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Wifi className="w-5 h-5" />
+              <span className="text-sm font-semibold">NFC Technology</span>
+            </motion.div>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+              Share your profile with a <br />
+              <span className="gradient-text">single tap</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Custom NFC products that link directly to your SmartCard profile. Design your own and start networking smarter.
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Custom NFC products that link directly to your SmartCard profile. 
+              Design your own and start networking smarter.
             </p>
           </motion.div>
 
@@ -280,14 +286,20 @@ export default function NFCProducts() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
-                  {nfcProducts.map((product) => (
-                    <ProductCard
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 mb-12">
+                  {nfcProducts.map((product, index) => (
+                    <motion.div
                       key={product.id}
-                      product={product}
-                      isSelected={selectedProduct?.id === product.id}
-                      onSelect={() => handleProductSelect(product)}
-                    />
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                    >
+                      <ProductCard
+                        product={product}
+                        isSelected={selectedProduct?.id === product.id}
+                        onSelect={() => handleProductSelect(product)}
+                      />
+                    </motion.div>
                   ))}
                 </div>
 

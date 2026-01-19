@@ -1,14 +1,6 @@
 import { motion } from "framer-motion";
 import { NFCProduct } from "./types";
-import { CreditCard, Sticker, Watch, Key, Star } from "lucide-react";
-
-const iconMap = {
-  card: CreditCard,
-  sticker: Sticker,
-  band: Watch,
-  keychain: Key,
-  review: Star,
-};
+import { productAnimations } from "./ProductAnimations";
 
 interface ProductCardProps {
   product: NFCProduct;
@@ -17,56 +9,96 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, isSelected, onSelect }: ProductCardProps) {
-  const Icon = iconMap[product.category];
+  const AnimationComponent = productAnimations[product.category];
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.03, y: -8 }}
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
-      className={`relative cursor-pointer rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
+      className={`relative cursor-pointer rounded-3xl border-2 transition-all duration-300 overflow-hidden group ${
         isSelected
-          ? "border-primary shadow-lg ring-2 ring-primary/20"
-          : "border-border hover:border-primary/50"
+          ? "border-primary shadow-2xl ring-4 ring-primary/30"
+          : "border-border/50 hover:border-primary/50 hover:shadow-xl"
       }`}
+      role="button"
+      aria-pressed={isSelected}
+      aria-label={`Select ${product.name} - $${product.basePrice.toFixed(2)}`}
     >
-      {/* Product Image/Gradient */}
-      <div className={`aspect-square bg-gradient-to-br ${product.image} p-6 flex items-center justify-center`}>
-        <div className="w-20 h-20 bg-background/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-          <Icon className="w-10 h-10 text-primary-foreground" />
+      {/* Product Animation Area */}
+      <div 
+        className={`aspect-[4/3] bg-gradient-to-br ${product.image} relative overflow-hidden`}
+      >
+        {/* Animated Background Pattern */}
+        <motion.div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(255,255,255,0.2) 0%, transparent 50%)`,
+          }}
+          animate={{
+            backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        />
+        
+        {/* Product Animation */}
+        <div className="relative z-10 w-full h-full">
+          <AnimationComponent />
         </div>
+        
+        {/* Glow effect on hover */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        />
       </div>
 
       {/* Product Info */}
-      <div className="p-4 bg-card">
-        <h3 className="font-semibold text-lg">{product.name}</h3>
-        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+      <div className="p-5 bg-card">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-bold text-xl leading-tight">{product.name}</h3>
+          {isSelected && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="shrink-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center"
+            >
+              <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </motion.div>
+          )}
+        </div>
+        
+        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 mb-4">
           {product.description}
         </p>
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-lg font-bold text-primary">
-            ${product.basePrice.toFixed(2)}
-          </span>
-          {isSelected && (
-            <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-              Selected
+        
+        <div className="flex items-center justify-between pt-3 border-t border-border/50">
+          <div>
+            <span className="text-2xl font-bold text-primary">
+              ${product.basePrice.toFixed(2)}
             </span>
-          )}
+            <span className="text-xs text-muted-foreground ml-1">USD</span>
+          </div>
+          
+          <motion.div
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              isSelected 
+                ? "bg-primary text-primary-foreground" 
+                : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+            }`}
+            whileHover={{ scale: 1.05 }}
+          >
+            {isSelected ? "Selected" : "Select"}
+          </motion.div>
         </div>
       </div>
 
-      {/* Selection indicator */}
-      {isSelected && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center"
-        >
-          <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </motion.div>
-      )}
+      {/* Shine effect on hover */}
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 pointer-events-none"
+      />
     </motion.div>
   );
 }
