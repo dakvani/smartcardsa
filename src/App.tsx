@@ -9,6 +9,7 @@ import Pricing from "./pages/Pricing";
 import Templates from "./pages/Templates";
 import Products from "./pages/Products";
 import NFCProducts from "./pages/NFCProducts";
+import OrderHistory from "./pages/OrderHistory";
 import Marketplace from "./pages/Marketplace";
 import Learn from "./pages/Learn";
 import Dashboard from "./pages/Dashboard";
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/templates" element={<Templates />} />
           <Route path="/products" element={<Products />} />
           <Route path="/nfc-products" element={<NFCProducts />} />
+          <Route path="/order-history" element={<OrderHistory />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/learn" element={<Learn />} />
           <Route path="/dashboard" element={<Dashboard />} />

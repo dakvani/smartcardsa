@@ -183,6 +183,81 @@ export type Database = {
           },
         ]
       }
+      nfc_orders: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          order_number: string
+          shipping_cost: number
+          shipping_info: Json
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          order_number: string
+          shipping_cost?: number
+          shipping_info?: Json
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          order_number?: string
+          shipping_cost?: number
+          shipping_info?: Json
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nfc_product_drafts: {
+        Row: {
+          created_at: string
+          customization: Json
+          id: string
+          name: string | null
+          product_id: string
+          product_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customization?: Json
+          id?: string
+          name?: string | null
+          product_id: string
+          product_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customization?: Json
+          id?: string
+          name?: string | null
+          product_id?: string
+          product_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_templates: {
         Row: {
           animation_intensity: number | null

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -7,18 +7,30 @@ import { ProductCard } from "@/components/products/ProductCard";
 import { DesignCustomizer } from "@/components/products/DesignCustomizer";
 import { LivePreview } from "@/components/products/LivePreview";
 import { CheckoutSummary } from "@/components/products/CheckoutSummary";
+import { DraftManager } from "@/components/products/DraftManager";
 import { nfcProducts, defaultCustomization, CartItem, DesignCustomization, NFCProduct } from "@/components/products/types";
-import { ArrowRight, ShoppingCart, ArrowLeft, Wifi } from "lucide-react";
+import { ArrowRight, ShoppingCart, ArrowLeft, Wifi, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { Json } from "@/integrations/supabase/types";
 
 type Step = 'select' | 'customize' | 'checkout';
 
 export default function NFCProducts() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('select');
   const [selectedProduct, setSelectedProduct] = useState<NFCProduct | null>(null);
   const [customization, setCustomization] = useState<DesignCustomization>(defaultCustomization);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id || null);
+    });
+  }, []);
 
   const handleProductSelect = (product: NFCProduct) => {
     setSelectedProduct(product);
@@ -53,8 +65,12 @@ export default function NFCProducts() {
   };
 
   const handleProceedToCheckout = () => {
-    if (cart.length === 0) {
-      handleAddToCart();
+    if (cart.length === 0 && selectedProduct) {
+      setCart([{
+        product: selectedProduct,
+        customization: { ...customization },
+        quantity: 1,
+      }]);
     }
     setStep('checkout');
   };
@@ -77,6 +93,83 @@ export default function NFCProducts() {
     }
   };
 
+  const handleLoadDraft = (product: NFCProduct, draftCustomization: DesignCustomization) => {
+    setSelectedProduct(product);
+    setCustomization(draftCustomization);
+    setStep('customize');
+  };
+
+  const handlePlaceOrder = async (shippingInfo: {
+    name: string;
+    email: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  }) => {
+    if (!userId) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to place an order.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    const subtotal = cart.reduce((sum, item) => sum + item.product.basePrice * item.quantity, 0);
+    const shipping = subtotal > 50 ? 0 : 5.99;
+    const total = subtotal + shipping;
+    const orderNumber = `NFC-${Date.now().toString(36).toUpperCase()}`;
+
+    try {
+      const { error } = await supabase.from("nfc_orders").insert({
+        user_id: userId,
+        order_number: orderNumber,
+        status: "pending",
+        items: cart.map(item => ({
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            basePrice: item.product.basePrice,
+            image: item.product.image,
+            category: item.product.category,
+          },
+          customization: {
+            name: item.customization.name,
+            linkedProfileUsername: item.customization.linkedProfileUsername,
+          },
+          quantity: item.quantity,
+        })) as unknown as Json,
+        shipping_info: shippingInfo as unknown as Json,
+        subtotal,
+        shipping_cost: shipping,
+        total,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Order placed!",
+        description: `Order #${orderNumber} has been submitted.`,
+      });
+
+      setCart([]);
+      setStep('select');
+      setSelectedProduct(null);
+      setCustomization(defaultCustomization);
+      
+      navigate("/order-history");
+    } catch (error) {
+      console.error("Error placing order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to place order. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -86,7 +179,7 @@ export default function NFCProducts() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            className="text-center mb-8"
           >
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-4">
               <Wifi className="w-4 h-4" />
@@ -99,6 +192,26 @@ export default function NFCProducts() {
               Custom NFC products that link directly to your SmartCard profile. Design your own and start networking smarter.
             </p>
           </motion.div>
+
+          {/* Draft Manager & Order History */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+            <DraftManager
+              currentProduct={selectedProduct}
+              currentCustomization={customization}
+              onLoadDraft={handleLoadDraft}
+              userId={userId}
+            />
+            {userId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/order-history")}
+              >
+                <History className="w-4 h-4 mr-2" />
+                Order History
+              </Button>
+            )}
+          </div>
 
           {/* Progress Steps */}
           <div className="flex items-center justify-center gap-4 mb-12">
@@ -250,6 +363,7 @@ export default function NFCProducts() {
                   onUpdateQuantity={handleUpdateQuantity}
                   onRemoveItem={handleRemoveItem}
                   onBack={handleBack}
+                  onPlaceOrder={handlePlaceOrder}
                 />
               </motion.div>
             )}
