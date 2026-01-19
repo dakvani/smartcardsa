@@ -411,6 +411,7 @@ export type Database = {
           social_links: Json | null
           theme_gradient: string | null
           theme_name: string | null
+          theme_preference: string | null
           title: string | null
           updated_at: string | null
           user_id: string
@@ -431,6 +432,7 @@ export type Database = {
           social_links?: Json | null
           theme_gradient?: string | null
           theme_name?: string | null
+          theme_preference?: string | null
           title?: string | null
           updated_at?: string | null
           user_id: string
@@ -451,6 +453,7 @@ export type Database = {
           social_links?: Json | null
           theme_gradient?: string | null
           theme_name?: string | null
+          theme_preference?: string | null
           title?: string | null
           updated_at?: string | null
           user_id?: string
