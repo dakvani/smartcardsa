@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "./PageTransition";
 import { ScrollToTop } from "./ScrollToTop";
+import { ScrollProgress } from "./ScrollProgress";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Pricing from "@/pages/Pricing";
@@ -22,6 +23,7 @@ export function AnimatedRoutes() {
 
   return (
     <>
+      <ScrollProgress />
       <ScrollToTop />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
