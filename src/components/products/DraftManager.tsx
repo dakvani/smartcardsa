@@ -18,11 +18,18 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Json } from "@/integrations/supabase/types";
 
+// Support both old and new customization formats for backward compatibility
+interface DraftCustomization {
+  front?: { backgroundColor?: string };
+  backgroundColor?: string;
+  [key: string]: any;
+}
+
 interface Draft {
   id: string;
   product_id: string;
   product_name: string;
-  customization: DesignCustomization;
+  customization: DraftCustomization;
   name: string | null;
   created_at: string;
   updated_at: string;
@@ -141,10 +148,39 @@ export function DraftManager({
     }
   };
 
+  // Convert old draft format to new format
+  const migrateCustomization = (custom: DraftCustomization): DesignCustomization => {
+    if (custom.front) {
+      return custom as unknown as DesignCustomization;
+    }
+    // Old format - migrate to new
+    return {
+      front: {
+        backgroundColor: custom.backgroundColor || '#1a1a2e',
+        textColor: custom.textColor || '#ffffff',
+        accentColor: custom.accentColor || '#6366f1',
+        name: custom.name || '',
+        title: custom.title || '',
+        logoUrl: custom.logoUrl || null,
+        customArtworkUrl: custom.customArtworkUrl || null,
+        pattern: 'none',
+        borderStyle: 'none',
+        icon: null,
+        showQRCode: false,
+      },
+      back: { ...defaultCustomization.back },
+      activeSide: 'front',
+      canvaDesignUrl: custom.canvaDesignUrl || null,
+      templateId: custom.templateId || null,
+      linkedProfileId: custom.linkedProfileId || null,
+      linkedProfileUsername: custom.linkedProfileUsername || null,
+    };
+  };
+
   const handleLoadDraft = (draft: Draft) => {
     const product = nfcProducts.find((p) => p.id === draft.product_id);
     if (product) {
-      onLoadDraft(product, draft.customization);
+      onLoadDraft(product, migrateCustomization(draft.customization));
       setLoadDialogOpen(false);
       toast({
         title: "Draft loaded",
@@ -159,7 +195,7 @@ export function DraftManager({
     
     const product = nfcProducts.find((p) => p.id === draft.product_id);
     if (product) {
-      onLoadDraft(product, draft.customization);
+      onLoadDraft(product, migrateCustomization(draft.customization));
     }
     
     setLoadDialogOpen(false);
@@ -284,7 +320,7 @@ export function DraftManager({
                   >
                     <div
                       className="w-12 h-12 rounded-xl"
-                      style={{ backgroundColor: draft.customization.backgroundColor }}
+                      style={{ backgroundColor: draft.customization.front?.backgroundColor || draft.customization.backgroundColor || '#1a1a2e' }}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">

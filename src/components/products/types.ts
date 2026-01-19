@@ -7,7 +7,7 @@ export interface NFCProduct {
   category: 'card' | 'sticker' | 'band' | 'keychain' | 'review';
 }
 
-export interface DesignCustomization {
+export interface SideCustomization {
   backgroundColor: string;
   textColor: string;
   accentColor: string;
@@ -15,6 +15,16 @@ export interface DesignCustomization {
   title: string;
   logoUrl: string | null;
   customArtworkUrl: string | null;
+  pattern: 'none' | 'dots' | 'lines' | 'grid' | 'waves' | 'geometric';
+  borderStyle: 'none' | 'solid' | 'dashed' | 'gradient' | 'glow';
+  icon: string | null;
+  showQRCode: boolean;
+}
+
+export interface DesignCustomization {
+  front: SideCustomization;
+  back: SideCustomization;
+  activeSide: 'front' | 'back';
   canvaDesignUrl: string | null;
   templateId: string | null;
   linkedProfileId: string | null;
@@ -27,7 +37,7 @@ export interface CartItem {
   quantity: number;
 }
 
-export const defaultCustomization: DesignCustomization = {
+export const defaultSideCustomization: SideCustomization = {
   backgroundColor: '#1a1a2e',
   textColor: '#ffffff',
   accentColor: '#6366f1',
@@ -35,11 +45,50 @@ export const defaultCustomization: DesignCustomization = {
   title: '',
   logoUrl: null,
   customArtworkUrl: null,
+  pattern: 'none',
+  borderStyle: 'none',
+  icon: null,
+  showQRCode: false,
+};
+
+export const defaultCustomization: DesignCustomization = {
+  front: { ...defaultSideCustomization },
+  back: { ...defaultSideCustomization, backgroundColor: '#2d2d44' },
+  activeSide: 'front',
   canvaDesignUrl: null,
   templateId: null,
   linkedProfileId: null,
   linkedProfileUsername: null,
 };
+
+export const patternOptions = [
+  { id: 'none', name: 'None' },
+  { id: 'dots', name: 'Dots' },
+  { id: 'lines', name: 'Lines' },
+  { id: 'grid', name: 'Grid' },
+  { id: 'waves', name: 'Waves' },
+  { id: 'geometric', name: 'Geometric' },
+];
+
+export const borderOptions = [
+  { id: 'none', name: 'None' },
+  { id: 'solid', name: 'Solid' },
+  { id: 'dashed', name: 'Dashed' },
+  { id: 'gradient', name: 'Gradient' },
+  { id: 'glow', name: 'Glow' },
+];
+
+export const iconOptions = [
+  { id: null, name: 'None', icon: '✕' },
+  { id: 'briefcase', name: 'Business', icon: '💼' },
+  { id: 'code', name: 'Tech', icon: '💻' },
+  { id: 'palette', name: 'Creative', icon: '🎨' },
+  { id: 'music', name: 'Music', icon: '🎵' },
+  { id: 'camera', name: 'Photo', icon: '📷' },
+  { id: 'heart', name: 'Health', icon: '❤️' },
+  { id: 'globe', name: 'Travel', icon: '🌍' },
+  { id: 'rocket', name: 'Startup', icon: '🚀' },
+];
 
 export const nfcProducts: NFCProduct[] = [
   {
