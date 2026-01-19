@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Accessibility, Type, Zap, Volume2, Check } from "lucide-react";
+import { Accessibility, Type, Zap, Volume2, Check, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -12,6 +12,7 @@ import { useTheme, Theme } from "@/components/ThemeToggle";
 
 interface AccessibilityPreferences {
   fontSize: "small" | "medium" | "large" | "extra-large";
+  fontFamily: "default" | "dyslexia";
   reducedMotion: boolean;
   screenReaderOptimized: boolean;
   highContrastText: boolean;
@@ -26,8 +27,14 @@ const fontSizeConfig = {
   "extra-large": { label: "Extra Large", value: "20px", scale: 1.25 },
 };
 
+const fontFamilyConfig = {
+  default: { label: "Default", description: "System default font" },
+  dyslexia: { label: "OpenDyslexic", description: "Dyslexia-friendly font" },
+};
+
 const defaultPreferences: AccessibilityPreferences = {
   fontSize: "medium",
+  fontFamily: "default",
   reducedMotion: false,
   screenReaderOptimized: false,
   highContrastText: false,
@@ -63,6 +70,9 @@ export function AccessibilitySettings() {
     // Apply font size
     root.style.setProperty("--accessibility-font-scale", String(fontSizeConfig[prefs.fontSize].scale));
     root.classList.toggle("accessibility-large-text", prefs.fontSize === "large" || prefs.fontSize === "extra-large");
+    
+    // Apply font family
+    root.classList.toggle("dyslexia-font", prefs.fontFamily === "dyslexia");
     
     // Apply reduced motion
     root.classList.toggle("reduce-motion", prefs.reducedMotion);
@@ -180,6 +190,58 @@ export function AccessibilitySettings() {
               <span>Compact</span>
               <span>Spacious</span>
             </div>
+          </div>
+
+          {/* Font Family */}
+          <div>
+            <Label className="text-sm font-medium mb-3 block">Font Style</Label>
+            <RadioGroup
+              value={preferences.fontFamily}
+              onValueChange={(value) => updatePreference("fontFamily", value as AccessibilityPreferences["fontFamily"])}
+              className="grid grid-cols-1 gap-3"
+            >
+              {Object.entries(fontFamilyConfig).map(([key, config]) => (
+                <motion.div
+                  key={key}
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <Label
+                    htmlFor={`font-family-${key}`}
+                    className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-colors ${
+                      preferences.fontFamily === key
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value={key} id={`font-family-${key}`} />
+                      <div>
+                        <span className={`font-medium ${key === "dyslexia" ? "font-['OpenDyslexic']" : ""}`}>
+                          {config.label}
+                        </span>
+                        <p className="text-sm text-muted-foreground">{config.description}</p>
+                      </div>
+                    </div>
+                    {key === "dyslexia" && (
+                      <BookOpen className="w-5 h-5 text-muted-foreground" />
+                    )}
+                    {preferences.fontFamily === key && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                  </Label>
+                </motion.div>
+              ))}
+            </RadioGroup>
+            {preferences.fontFamily === "dyslexia" && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="text-sm text-muted-foreground bg-primary/5 p-3 rounded-lg mt-3"
+              >
+                ✓ OpenDyslexic font is now active. This font is designed to increase readability for readers with dyslexia.
+              </motion.p>
+            )}
           </div>
 
           <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
