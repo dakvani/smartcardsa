@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const navLinks = [
   { name: "Templates", href: "/templates" },
@@ -18,30 +18,32 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
   
   const { scrollY } = useScroll();
   const headerOpacity = useTransform(scrollY, [0, 50], [0.6, 0.95]);
 
   // Handle scroll direction for show/hide
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const currentScrollY = latest;
-    
+  useMotionValueEvent(scrollY, "change", (currentScrollY) => {
     // Always show at top
     if (currentScrollY < 50) {
       setIsVisible(true);
       setHasScrolled(false);
     } else {
       setHasScrolled(true);
-      // Show when scrolling up, hide when scrolling down
-      if (currentScrollY < lastScrollY) {
+      // Show when scrolling up (with threshold for sensitivity)
+      const scrollDiff = currentScrollY - lastScrollY.current;
+      
+      if (scrollDiff < -5) {
+        // Scrolling up
         setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      } else if (scrollDiff > 10 && currentScrollY > 100) {
+        // Scrolling down significantly
         setIsVisible(false);
       }
     }
     
-    setLastScrollY(currentScrollY);
+    lastScrollY.current = currentScrollY;
   });
 
   // Close mobile menu on route change
