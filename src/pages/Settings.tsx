@@ -5,8 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { ArrowLeft, Mail, Lock, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { ArrowLeft, Mail, Lock, AlertCircle, CheckCircle2, Loader2, Eye, EyeOff, RefreshCw, Trash2, AlertTriangle } from "lucide-react";
 import type { User, Session } from "@supabase/supabase-js";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -388,8 +399,135 @@ export default function Settings() {
               </div>
             </div>
           </div>
+
+          {/* Delete Account */}
+          <DeleteAccountSection userId={user.id} navigate={navigate} />
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+// Separate component for delete account to manage its own state
+function DeleteAccountSection({ userId, navigate }: { userId: string; navigate: (path: string) => void }) {
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== "DELETE") {
+      toast.error("Please type DELETE to confirm");
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      // Delete user's data in order (respecting foreign key constraints)
+      // 1. Delete link_clicks (references links and profiles)
+      const { error: clicksError } = await supabase
+        .from("link_clicks")
+        .delete()
+        .eq("profile_id", (await supabase.from("profiles").select("id").eq("user_id", userId).single()).data?.id || "");
+      
+      // 2. Delete profile_views
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+      
+      if (profileData) {
+        await supabase.from("profile_views").delete().eq("profile_id", profileData.id);
+        await supabase.from("email_subscribers").delete().eq("profile_id", profileData.id);
+      }
+
+      // 3. Delete links (also removes references in link_clicks)
+      await supabase.from("links").delete().eq("user_id", userId);
+
+      // 4. Delete link_groups
+      await supabase.from("link_groups").delete().eq("user_id", userId);
+
+      // 5. Delete profile
+      await supabase.from("profiles").delete().eq("user_id", userId);
+
+      // 6. Sign out (the auth.users deletion should be handled by cascade or admin)
+      await supabase.auth.signOut();
+      
+      toast.success("Your account data has been deleted.");
+      navigate("/");
+    } catch (error: any) {
+      toast.error("Failed to delete account: " + error.message);
+    } finally {
+      setDeleting(false);
+      setIsDialogOpen(false);
+    }
+  };
+
+  return (
+    <div className="bg-background rounded-2xl border border-destructive/30 p-6">
+      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-destructive">
+        <Trash2 className="w-5 h-5" />
+        Delete Account
+      </h2>
+      
+      <p className="text-sm text-muted-foreground mb-4">
+        Once you delete your account, there is no going back. All your data including your profile, 
+        links, analytics, and subscribers will be permanently deleted.
+      </p>
+      
+      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Account
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Are you absolutely sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                This action cannot be undone. This will permanently delete your account
+                and remove all associated data from our servers.
+              </p>
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">
+                  Type <span className="font-mono bg-secondary px-2 py-1 rounded">DELETE</span> to confirm:
+                </p>
+                <Input
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value.toUpperCase())}
+                  placeholder="Type DELETE"
+                  className="font-mono"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmation("")}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmation !== "DELETE" || deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete my account"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
