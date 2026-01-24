@@ -11,6 +11,10 @@ import {
   Eye,
   Trash2,
   AlertTriangle,
+  Plus,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +25,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 
 type TableName = "profiles" | "nfc_orders" | "product_reviews" | "product_wishlist" | 
                  "profile_views" | "email_subscribers" | "links" | "link_groups" | 
@@ -31,23 +38,94 @@ interface TableInfo {
   label: string;
   description: string;
   canDelete: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  editableFields: string[];
 }
 
 const TABLES: TableInfo[] = [
-  { name: "profiles", label: "Profiles", description: "User profile data", canDelete: false },
-  { name: "nfc_orders", label: "NFC Orders", description: "Product orders", canDelete: true },
-  { name: "product_reviews", label: "Product Reviews", description: "User reviews", canDelete: true },
-  { name: "product_wishlist", label: "Wishlist", description: "Saved products", canDelete: true },
-  { name: "profile_views", label: "Profile Views", description: "View analytics", canDelete: true },
-  { name: "email_subscribers", label: "Email Subscribers", description: "Newsletter signups", canDelete: true },
-  { name: "links", label: "Links", description: "User links", canDelete: true },
-  { name: "link_groups", label: "Link Groups", description: "Link categories", canDelete: true },
-  { name: "link_clicks", label: "Link Clicks", description: "Click analytics", canDelete: true },
-  { name: "profile_templates", label: "Templates", description: "Profile templates", canDelete: false },
-  { name: "user_roles", label: "User Roles", description: "Role assignments", canDelete: true },
-  { name: "user_theme_presets", label: "Theme Presets", description: "Custom themes", canDelete: true },
-  { name: "nfc_product_drafts", label: "Product Drafts", description: "Design drafts", canDelete: true },
+  { name: "profiles", label: "Profiles", description: "User profile data", canDelete: false, canCreate: false, canEdit: true, editableFields: ["username", "title", "bio", "theme_name", "theme_gradient"] },
+  { name: "nfc_orders", label: "NFC Orders", description: "Product orders", canDelete: true, canCreate: false, canEdit: true, editableFields: ["status"] },
+  { name: "product_reviews", label: "Product Reviews", description: "User reviews", canDelete: true, canCreate: false, canEdit: true, editableFields: ["title", "content", "rating"] },
+  { name: "product_wishlist", label: "Wishlist", description: "Saved products", canDelete: true, canCreate: false, canEdit: false, editableFields: [] },
+  { name: "profile_views", label: "Profile Views", description: "View analytics", canDelete: true, canCreate: false, canEdit: false, editableFields: [] },
+  { name: "email_subscribers", label: "Email Subscribers", description: "Newsletter signups", canDelete: true, canCreate: true, canEdit: true, editableFields: ["email"] },
+  { name: "links", label: "Links", description: "User links", canDelete: true, canCreate: true, canEdit: true, editableFields: ["title", "url", "visible", "position", "is_featured"] },
+  { name: "link_groups", label: "Link Groups", description: "Link categories", canDelete: true, canCreate: true, canEdit: true, editableFields: ["name", "position", "is_collapsed"] },
+  { name: "link_clicks", label: "Link Clicks", description: "Click analytics", canDelete: true, canCreate: false, canEdit: false, editableFields: [] },
+  { name: "profile_templates", label: "Templates", description: "Profile templates", canDelete: false, canCreate: true, canEdit: true, editableFields: ["name", "theme_name", "theme_gradient", "category", "description", "is_premium"] },
+  { name: "user_roles", label: "User Roles", description: "Role assignments", canDelete: true, canCreate: true, canEdit: true, editableFields: ["role"] },
+  { name: "user_theme_presets", label: "Theme Presets", description: "Custom themes", canDelete: true, canCreate: false, canEdit: true, editableFields: ["name", "theme_name", "theme_gradient"] },
+  { name: "nfc_product_drafts", label: "Product Drafts", description: "Design drafts", canDelete: true, canCreate: false, canEdit: true, editableFields: ["name", "product_name"] },
 ];
+
+interface FieldConfig {
+  name: string;
+  type: "text" | "textarea" | "number" | "boolean" | "select";
+  label: string;
+  options?: string[];
+  required?: boolean;
+}
+
+const getFieldConfigs = (tableName: TableName): FieldConfig[] => {
+  switch (tableName) {
+    case "profiles":
+      return [
+        { name: "username", type: "text", label: "Username", required: true },
+        { name: "title", type: "text", label: "Title" },
+        { name: "bio", type: "textarea", label: "Bio" },
+        { name: "theme_name", type: "text", label: "Theme Name" },
+        { name: "theme_gradient", type: "text", label: "Theme Gradient" },
+      ];
+    case "nfc_orders":
+      return [
+        { name: "status", type: "select", label: "Status", options: ["pending", "processing", "shipped", "delivered", "cancelled"], required: true },
+      ];
+    case "product_reviews":
+      return [
+        { name: "title", type: "text", label: "Title" },
+        { name: "content", type: "textarea", label: "Content" },
+        { name: "rating", type: "number", label: "Rating (1-5)", required: true },
+      ];
+    case "email_subscribers":
+      return [
+        { name: "email", type: "text", label: "Email", required: true },
+        { name: "profile_id", type: "text", label: "Profile ID", required: true },
+      ];
+    case "links":
+      return [
+        { name: "title", type: "text", label: "Title", required: true },
+        { name: "url", type: "text", label: "URL" },
+        { name: "visible", type: "boolean", label: "Visible" },
+        { name: "position", type: "number", label: "Position" },
+        { name: "is_featured", type: "boolean", label: "Featured" },
+        { name: "user_id", type: "text", label: "User ID", required: true },
+      ];
+    case "link_groups":
+      return [
+        { name: "name", type: "text", label: "Name", required: true },
+        { name: "position", type: "number", label: "Position" },
+        { name: "is_collapsed", type: "boolean", label: "Collapsed" },
+        { name: "user_id", type: "text", label: "User ID", required: true },
+      ];
+    case "profile_templates":
+      return [
+        { name: "name", type: "text", label: "Name", required: true },
+        { name: "theme_name", type: "text", label: "Theme Name", required: true },
+        { name: "theme_gradient", type: "text", label: "Theme Gradient", required: true },
+        { name: "category", type: "select", label: "Category", options: ["minimal", "creative", "professional", "vibrant"], required: true },
+        { name: "description", type: "textarea", label: "Description" },
+        { name: "is_premium", type: "boolean", label: "Premium" },
+      ];
+    case "user_roles":
+      return [
+        { name: "user_id", type: "text", label: "User ID", required: true },
+        { name: "role", type: "select", label: "Role", options: ["admin", "moderator", "user"], required: true },
+      ];
+    default:
+      return [];
+  }
+};
 
 export function AdminTableViewer() {
   const { toast } = useToast();
@@ -59,6 +137,10 @@ export function AdminTableViewer() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ table: TableName; id: string } | null>(null);
+  const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadTableData();
@@ -134,8 +216,88 @@ export function AdminTableViewer() {
     }
   };
 
+  const handleEdit = (row: Record<string, unknown>) => {
+    setEditingRow(row);
+    const tableInfo = TABLES.find(t => t.name === selectedTable);
+    const initialFormData: Record<string, unknown> = {};
+    tableInfo?.editableFields.forEach(field => {
+      initialFormData[field] = row[field];
+    });
+    setFormData(initialFormData);
+  };
+
+  const handleCreate = () => {
+    setFormData({});
+    setCreateDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingRow) return;
+    setSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from(selectedTable)
+        .update(formData)
+        .eq("id", editingRow.id as string);
+
+      if (error) throw error;
+
+      setData(data.map(row => 
+        row.id === editingRow.id ? { ...row, ...formData } : row
+      ));
+      toast({
+        title: "Updated",
+        description: "Record updated successfully.",
+      });
+      setEditingRow(null);
+      setFormData({});
+    } catch (error) {
+      console.error("Error updating record:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update record.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCreate = async () => {
+    setSaving(true);
+
+    try {
+      const { data: newRecord, error } = await supabase
+        .from(selectedTable)
+        .insert(formData as never)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setData([newRecord as Record<string, unknown>, ...data]);
+      toast({
+        title: "Created",
+        description: "Record created successfully.",
+      });
+      setCreateDialogOpen(false);
+      setFormData({});
+    } catch (error) {
+      console.error("Error creating record:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create record.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
   const currentTableInfo = TABLES.find(t => t.name === selectedTable);
+  const fieldConfigs = getFieldConfigs(selectedTable);
 
   const filteredData = data.filter(row => {
     if (!searchTerm) return true;
@@ -150,6 +312,87 @@ export function AdminTableViewer() {
     if (typeof value === "boolean") return value ? "Yes" : "No";
     const strValue = String(value);
     return strValue.length > 50 ? strValue.substring(0, 50) + "..." : strValue;
+  };
+
+  const renderFormField = (config: FieldConfig, isCreate: boolean = false) => {
+    const value = formData[config.name];
+    const onChange = (newValue: unknown) => {
+      setFormData(prev => ({ ...prev, [config.name]: newValue }));
+    };
+
+    // For edit mode, skip fields that aren't editable
+    if (!isCreate && !currentTableInfo?.editableFields.includes(config.name)) {
+      return null;
+    }
+
+    switch (config.type) {
+      case "textarea":
+        return (
+          <div key={config.name} className="space-y-2">
+            <Label htmlFor={config.name}>{config.label}</Label>
+            <Textarea
+              id={config.name}
+              value={String(value || "")}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={config.label}
+            />
+          </div>
+        );
+      case "number":
+        return (
+          <div key={config.name} className="space-y-2">
+            <Label htmlFor={config.name}>{config.label}</Label>
+            <Input
+              id={config.name}
+              type="number"
+              value={String(value || "")}
+              onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+              placeholder={config.label}
+            />
+          </div>
+        );
+      case "boolean":
+        return (
+          <div key={config.name} className="flex items-center justify-between">
+            <Label htmlFor={config.name}>{config.label}</Label>
+            <Switch
+              id={config.name}
+              checked={Boolean(value)}
+              onCheckedChange={onChange}
+            />
+          </div>
+        );
+      case "select":
+        return (
+          <div key={config.name} className="space-y-2">
+            <Label htmlFor={config.name}>{config.label}</Label>
+            <Select value={String(value || "")} onValueChange={onChange}>
+              <SelectTrigger>
+                <SelectValue placeholder={`Select ${config.label}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {config.options?.map(option => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      default:
+        return (
+          <div key={config.name} className="space-y-2">
+            <Label htmlFor={config.name}>{config.label}</Label>
+            <Input
+              id={config.name}
+              value={String(value || "")}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={config.label}
+            />
+          </div>
+        );
+    }
   };
 
   return (
@@ -173,6 +416,12 @@ export function AdminTableViewer() {
                 ))}
               </SelectContent>
             </Select>
+            {currentTableInfo?.canCreate && (
+              <Button onClick={handleCreate} className="gap-1">
+                <Plus className="w-4 h-4" />
+                Add
+              </Button>
+            )}
             <Button variant="outline" size="icon" onClick={loadTableData} disabled={loading}>
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
@@ -247,15 +496,27 @@ export function AdminTableViewer() {
                               variant="ghost"
                               size="icon"
                               onClick={() => setSelectedRow(row)}
+                              title="View"
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+                            {currentTableInfo?.canEdit && currentTableInfo.editableFields.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(row)}
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            )}
                             {currentTableInfo?.canDelete && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="text-destructive hover:text-destructive"
                                 onClick={() => setDeleteConfirm({ table: selectedTable, id: String(row.id) })}
+                                title="Delete"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -273,7 +534,11 @@ export function AdminTableViewer() {
 
         <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
           <span>Showing {filteredData.length} of {data.length} records (max 100)</span>
-          <Badge variant="outline">{currentTableInfo?.description}</Badge>
+          <div className="flex items-center gap-2">
+            {currentTableInfo?.canEdit && <Badge variant="secondary">Editable</Badge>}
+            {currentTableInfo?.canCreate && <Badge variant="secondary">Can Create</Badge>}
+            <Badge variant="outline">{currentTableInfo?.description}</Badge>
+          </div>
         </div>
       </CardContent>
 
@@ -291,6 +556,52 @@ export function AdminTableViewer() {
           </ScrollArea>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelectedRow(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Record Dialog */}
+      <Dialog open={!!editingRow} onOpenChange={() => { setEditingRow(null); setFormData({}); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Record</DialogTitle>
+            <DialogDescription>Update the record in {selectedTable}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {fieldConfigs.filter(f => currentTableInfo?.editableFields.includes(f.name)).map(config => renderFormField(config, false))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setEditingRow(null); setFormData({}); }}>
+              <X className="w-4 h-4 mr-1" />
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Record Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Record</DialogTitle>
+            <DialogDescription>Add a new record to {selectedTable}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {fieldConfigs.map(config => renderFormField(config, true))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setCreateDialogOpen(false); setFormData({}); }}>
+              <X className="w-4 h-4 mr-1" />
+              Cancel
+            </Button>
+            <Button onClick={handleSaveCreate} disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
+              Create Record
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
