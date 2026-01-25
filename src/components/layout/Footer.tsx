@@ -34,9 +34,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4" aria-label="SmartCard - Go to homepage">
-              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center" aria-hidden="true">
-                <span className="text-primary-foreground font-bold text-sm">S</span>
-              </div>
+              <img src="/favicon.png" alt="" className="w-8 h-8 rounded-lg" aria-hidden="true" />
               <span className="font-bold text-xl">SmartCard</span>
             </Link>
             <p className="text-sm text-muted-foreground">
