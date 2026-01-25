@@ -223,7 +223,7 @@ export function AdminUserManager() {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Users List */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -233,81 +233,143 @@ export function AdminUserManager() {
             No users found
           </div>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Roles</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <AnimatePresence>
-                  {filteredUsers.map((user, index) => (
-                    <motion.tr
-                      key={user.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      className="border-b"
+          <>
+            {/* Mobile Card View */}
+            <div className="block md:hidden space-y-3">
+              {filteredUsers.map((user, index) => (
+                <motion.div
+                  key={user.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.02 }}
+                  className="border rounded-lg p-4 bg-card"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {user.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{user.username}</p>
+                      <p className="text-sm text-muted-foreground truncate">{user.title}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {user.roles.length === 0 ? (
+                      <Badge variant="outline" className="text-muted-foreground">No roles</Badge>
+                    ) : (
+                      user.roles.map(role => {
+                        const Icon = roleIcons[role];
+                        return (
+                          <Badge
+                            key={role}
+                            variant="outline"
+                            className={`${roleColors[role]} cursor-pointer hover:opacity-80`}
+                            onClick={() => setRemoveRoleConfirm({ userId: user.user_id, role, username: user.username })}
+                          >
+                            <Icon className="w-3 h-3 mr-1" />
+                            {role}
+                          </Badge>
+                        );
+                      })
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <span className="text-xs text-muted-foreground">
+                      Joined {new Date(user.created_at).toLocaleDateString()}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAddRoleDialog({ userId: user.user_id, username: user.username })}
                     >
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={user.avatar_url || undefined} />
-                            <AvatarFallback>
-                              {user.username.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm text-muted-foreground">{user.title}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{user.username}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {user.roles.length === 0 ? (
-                            <Badge variant="outline" className="text-muted-foreground">No roles</Badge>
-                          ) : (
-                            user.roles.map(role => {
-                              const Icon = roleIcons[role];
-                              return (
-                                <Badge
-                                  key={role}
-                                  variant="outline"
-                                  className={`${roleColors[role]} cursor-pointer hover:opacity-80`}
-                                  onClick={() => setRemoveRoleConfirm({ userId: user.user_id, role, username: user.username })}
-                                >
-                                  <Icon className="w-3 h-3 mr-1" />
-                                  {role}
-                                </Badge>
-                              );
-                            })
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setAddRoleDialog({ userId: user.user_id, username: user.username })}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add Role
-                        </Button>
-                      </TableCell>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </TableBody>
-            </Table>
-          </div>
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Role
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Roles</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <AnimatePresence>
+                    {filteredUsers.map((user, index) => (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ delay: index * 0.02 }}
+                        className="border-b"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-8 h-8">
+                              <AvatarImage src={user.avatar_url || undefined} />
+                              <AvatarFallback>
+                                {user.username.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm text-muted-foreground">{user.title}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{user.username}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.roles.length === 0 ? (
+                              <Badge variant="outline" className="text-muted-foreground">No roles</Badge>
+                            ) : (
+                              user.roles.map(role => {
+                                const Icon = roleIcons[role];
+                                return (
+                                  <Badge
+                                    key={role}
+                                    variant="outline"
+                                    className={`${roleColors[role]} cursor-pointer hover:opacity-80`}
+                                    onClick={() => setRemoveRoleConfirm({ userId: user.user_id, role, username: user.username })}
+                                  >
+                                    <Icon className="w-3 h-3 mr-1" />
+                                    {role}
+                                  </Badge>
+                                );
+                              })
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAddRoleDialog({ userId: user.user_id, username: user.username })}
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add Role
+                          </Button>
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
 
         <div className="mt-4 text-sm text-muted-foreground">

@@ -1,16 +1,40 @@
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 
 interface LoadingScreenProps {
   onComplete?: () => void;
 }
 
 export function LoadingScreen({ onComplete }: LoadingScreenProps) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    // Simulate loading progress
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        // Accelerate towards the end
+        const increment = prev < 70 ? 15 : prev < 90 ? 8 : 3;
+        return Math.min(prev + increment, 100);
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 1 }}
-      animate={{ opacity: 0 }}
-      transition={{ duration: 0.5, delay: 1.5 }}
-      onAnimationComplete={onComplete}
+      animate={{ opacity: progress >= 100 ? 0 : 1 }}
+      transition={{ duration: 0.5, delay: progress >= 100 ? 0.3 : 0 }}
+      onAnimationComplete={() => {
+        if (progress >= 100) {
+          onComplete?.();
+        }
+      }}
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background"
     >
       {/* Animated Icon */}
@@ -78,30 +102,40 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
         </motion.p>
       </motion.div>
 
-      {/* Loading dots */}
+      {/* Progress bar */}
       <motion.div
+        initial={{ opacity: 0, width: 0 }}
+        animate={{ opacity: 1, width: "200px" }}
+        transition={{ delay: 0.5, duration: 0.3 }}
+        className="mt-8 h-1.5 bg-muted rounded-full overflow-hidden"
+      >
+        <motion.div
+          className="h-full bg-gradient-to-r from-primary to-pink-500 rounded-full"
+          initial={{ width: "0%" }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.1 }}
+        />
+      </motion.div>
+
+      {/* Progress percentage */}
+      <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="flex gap-1.5 mt-8"
+        transition={{ delay: 0.6 }}
+        className="text-xs text-muted-foreground mt-3"
       >
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className="w-2 h-2 rounded-full bg-primary"
-            animate={{ 
-              scale: [1, 1.3, 1],
-              opacity: [0.5, 1, 0.5]
-            }}
-            transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              delay: i * 0.15,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </motion.div>
+        {progress}%
+      </motion.p>
     </motion.div>
   );
+}
+
+// Check if this is the first visit
+export function shouldShowLoadingScreen(): boolean {
+  const hasVisited = localStorage.getItem("smartcard_visited");
+  if (!hasVisited) {
+    localStorage.setItem("smartcard_visited", "true");
+    return true;
+  }
+  return false;
 }
