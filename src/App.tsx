@@ -8,19 +8,12 @@ import { AnimatedRoutes } from "./components/AnimatedRoutes";
 import { SkipLink } from "./components/accessibility/SkipLink";
 import { KeyboardShortcutsHelp } from "./components/accessibility/KeyboardShortcuts";
 import { FocusVisibilityManager } from "./components/accessibility/FocusRing";
-import { LoadingScreen } from "./components/LoadingScreen";
+import { LoadingScreen, shouldShowLoadingScreen } from "./components/LoadingScreen";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [showContent, setShowContent] = useState(false);
-
-  useEffect(() => {
-    // Show content after a brief delay to ensure smooth transition
-    const timer = setTimeout(() => setShowContent(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
+  const [isLoading, setIsLoading] = useState(() => shouldShowLoadingScreen());
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -30,13 +23,9 @@ const App = () => {
         <Sonner />
         {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
         <BrowserRouter>
-          {showContent && (
-            <>
-              <SkipLink />
-              <KeyboardShortcutsHelp />
-              <AnimatedRoutes />
-            </>
-          )}
+          <SkipLink />
+          <KeyboardShortcutsHelp />
+          <AnimatedRoutes />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

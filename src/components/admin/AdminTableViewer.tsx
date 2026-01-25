@@ -397,15 +397,15 @@ export function AdminTableViewer() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col gap-4">
           <div>
             <CardTitle>Database Tables</CardTitle>
             <CardDescription>View and manage database records</CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Select value={selectedTable} onValueChange={(v) => setSelectedTable(v as TableName)}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -416,15 +416,17 @@ export function AdminTableViewer() {
                 ))}
               </SelectContent>
             </Select>
-            {currentTableInfo?.canCreate && (
-              <Button onClick={handleCreate} className="gap-1">
-                <Plus className="w-4 h-4" />
-                Add
+            <div className="flex gap-2">
+              {currentTableInfo?.canCreate && (
+                <Button onClick={handleCreate} className="gap-1 flex-1 sm:flex-none">
+                  <Plus className="w-4 h-4" />
+                  <span className="sm:inline">Add</span>
+                </Button>
+              )}
+              <Button variant="outline" size="icon" onClick={loadTableData} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
-            )}
-            <Button variant="outline" size="icon" onClick={loadTableData} disabled={loading}>
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -442,7 +444,7 @@ export function AdminTableViewer() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table - Desktop */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -452,89 +454,150 @@ export function AdminTableViewer() {
             No records found
           </div>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <ScrollArea className="h-[500px]">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {columns.slice(0, 6).map(column => (
-                      <TableHead
-                        key={column}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort(column)}
-                      >
-                        <div className="flex items-center gap-1">
+          <>
+            {/* Mobile Card View */}
+            <div className="block md:hidden space-y-3">
+              {filteredData.slice(0, 20).map((row, index) => (
+                <motion.div
+                  key={String(row.id)}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.02 }}
+                  className="border rounded-lg p-4 bg-card"
+                >
+                  <div className="space-y-2">
+                    {columns.slice(0, 4).map(column => (
+                      <div key={column} className="flex justify-between items-start gap-2">
+                        <span className="text-xs text-muted-foreground capitalize">
                           {column.replace(/_/g, " ")}
-                          {sortColumn === column && (
-                            sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                          )}
-                        </div>
-                      </TableHead>
+                        </span>
+                        <span className="text-sm font-mono text-right truncate max-w-[60%]">
+                          {formatCellValue(row[column])}
+                        </span>
+                      </div>
                     ))}
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <AnimatePresence>
-                    {filteredData.map((row, index) => (
-                      <motion.tr
-                        key={String(row.id)}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ delay: index * 0.02 }}
-                        className="border-b"
+                  </div>
+                  <div className="flex gap-2 mt-3 pt-3 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedRow(row)}
+                      className="flex-1"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
+                    {currentTableInfo?.canEdit && currentTableInfo.editableFields.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(row)}
+                        className="flex-1"
                       >
-                        {columns.slice(0, 6).map(column => (
-                          <TableCell key={column} className="font-mono text-sm">
-                            {formatCellValue(row[column])}
-                          </TableCell>
-                        ))}
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setSelectedRow(row)}
-                              title="View"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {currentTableInfo?.canEdit && currentTableInfo.editableFields.length > 0 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(row)}
-                                title="Edit"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                            )}
-                            {currentTableInfo?.canDelete && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => setDeleteConfirm({ table: selectedTable, id: String(row.id) })}
-                                title="Delete"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                    {currentTableInfo?.canDelete && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteConfirm({ table: selectedTable, id: String(row.id) })}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block border rounded-lg overflow-hidden">
+              <ScrollArea className="h-[500px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {columns.slice(0, 6).map(column => (
+                        <TableHead
+                          key={column}
+                          className="cursor-pointer hover:bg-muted/50 whitespace-nowrap"
+                          onClick={() => handleSort(column)}
+                        >
+                          <div className="flex items-center gap-1">
+                            {column.replace(/_/g, " ")}
+                            {sortColumn === column && (
+                              sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                             )}
                           </div>
-                        </TableCell>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </div>
+                        </TableHead>
+                      ))}
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <AnimatePresence>
+                      {filteredData.map((row, index) => (
+                        <motion.tr
+                          key={String(row.id)}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ delay: index * 0.02 }}
+                          className="border-b"
+                        >
+                          {columns.slice(0, 6).map(column => (
+                            <TableCell key={column} className="font-mono text-sm">
+                              {formatCellValue(row[column])}
+                            </TableCell>
+                          ))}
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedRow(row)}
+                                title="View"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {currentTableInfo?.canEdit && currentTableInfo.editableFields.length > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(row)}
+                                  title="Edit"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {currentTableInfo?.canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteConfirm({ table: selectedTable, id: String(row.id) })}
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
+          </>
         )}
 
-        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
           <span>Showing {filteredData.length} of {data.length} records (max 100)</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {currentTableInfo?.canEdit && <Badge variant="secondary">Editable</Badge>}
             {currentTableInfo?.canCreate && <Badge variant="secondary">Can Create</Badge>}
             <Badge variant="outline">{currentTableInfo?.description}</Badge>
