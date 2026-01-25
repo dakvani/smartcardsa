@@ -388,9 +388,7 @@ export default function PublicProfile() {
             to="/" 
             className="inline-flex items-center gap-2 text-primary-foreground/50 hover:text-primary-foreground transition-colors text-sm"
           >
-            <div className="w-5 h-5 rounded gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">S</span>
-            </div>
+            <img src="/favicon.png" alt="" className="w-5 h-5 rounded" />
             Made with SmartCard
           </Link>
         </motion.div>
