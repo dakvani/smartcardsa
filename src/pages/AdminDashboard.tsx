@@ -20,7 +20,8 @@ import {
   ChevronRight,
   BarChart3,
   Package,
-  Clock
+  Clock,
+  Bell
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminTableViewer } from "@/components/admin/AdminTableViewer";
 import { AdminUserManager } from "@/components/admin/AdminUserManager";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
+import { useAdminOrderNotifications } from "@/hooks/use-admin-order-notifications";
 
 interface TableStats {
   name: string;
@@ -45,6 +47,9 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState<TableStats[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Real-time order notifications
+  const { hasNewOrders, notificationCount, clearNotifications } = useAdminOrderNotifications(isAdmin);
 
   useEffect(() => {
     checkAdminAndLoadStats();
@@ -189,7 +194,20 @@ export default function AdminDashboard() {
                   Manage and monitor your application data
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {hasNewOrders && (
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      clearNotifications();
+                      navigate("/admin/orders");
+                    }}
+                    className="gap-2 animate-pulse"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {notificationCount} New Order{notificationCount > 1 ? 's' : ''}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={loadStats}
