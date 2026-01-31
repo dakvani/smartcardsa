@@ -1,8 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Star, Users, Zap } from "lucide-react";
 import { useRef } from "react";
+
+const stats = [
+  { icon: Users, value: "30M+", label: "Creators" },
+  { icon: Star, value: "4.9", label: "App Rating" },
+  { icon: Zap, value: "1B+", label: "Link Clicks" },
+];
 
 export function CTA() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -43,37 +49,73 @@ export function CTA() {
         className="container mx-auto px-4 relative z-10"
         style={{ scale }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground/95">
-            Ready to simplify your online presence?
-          </h2>
-          <p className="text-xl text-muted-foreground mb-10">
-            Join millions of creators who trust SmartCard to connect with their audience.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/auth?signup=true">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="hero" size="xl" className="glass-heavy border-primary/30 hover:border-primary/50 shadow-glow">
-                  Get started for free
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </motion.div>
-            </Link>
-            <Link to="/pricing">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <Button variant="heroOutline" size="xl" className="border-border/50 text-foreground/80 hover:bg-card/40 hover:text-foreground">
-                  View pricing
-                </Button>
-              </motion.div>
-            </Link>
-          </div>
-        </motion.div>
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-7xl mx-auto">
+          {/* Left side - Text content */}
+          <motion.div
+            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-left"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground/95">
+              Ready to simplify your online presence?
+            </h2>
+            <p className="text-xl text-muted-foreground mb-10 max-w-lg">
+              Join millions of creators who trust SmartCard to connect with their audience.
+            </p>
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+              <Link to="/auth?signup=true">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="hero" size="xl" className="glass-heavy border-primary/30 hover:border-primary/50 shadow-glow">
+                    Get started for free
+                    <ArrowRight className="w-5 h-5" />
+                  </Button>
+                </motion.div>
+              </Link>
+              <Link to="/pricing">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="heroOutline" size="xl" className="border-border/50 text-foreground/80 hover:bg-card/40 hover:text-foreground">
+                    View pricing
+                  </Button>
+                </motion.div>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Right side - Stats cards */}
+          <motion.div
+            initial={{ opacity: 0, x: 50, filter: "blur(10px)" }}
+            whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="flex justify-center lg:justify-end"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4 w-full max-w-sm">
+              {stats.map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  className="p-6 rounded-2xl glass border border-border/30 hover:border-primary/20 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <stat.icon className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </motion.div>
     </section>
   );

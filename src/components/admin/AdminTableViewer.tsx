@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logAdminAction } from "@/hooks/use-audit-log";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
   Search,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   RefreshCw,
   Eye,
   Trash2,
@@ -15,11 +18,14 @@ import {
   Pencil,
   Save,
   X,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -127,6 +133,8 @@ const getFieldConfigs = (tableName: TableName): FieldConfig[] => {
   }
 };
 
+const PAGE_SIZE = 25;
+
 export function AdminTableViewer() {
   const { toast } = useToast();
   const [selectedTable, setSelectedTable] = useState<TableName>("profiles");
@@ -141,15 +149,29 @@ export function AdminTableViewer() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+    loadTableData();
+  }, [selectedTable]);
 
   useEffect(() => {
     loadTableData();
-  }, [selectedTable]);
+  }, [currentPage, sortColumn, sortDirection]);
 
   const loadTableData = async () => {
     setLoading(true);
     try {
-      let query = supabase.from(selectedTable).select("*").limit(100);
+      let query = supabase.from(selectedTable).select("*", { count: "exact" });
       
       if (sortColumn) {
         query = query.order(sortColumn, { ascending: sortDirection === "asc" });
@@ -157,10 +179,12 @@ export function AdminTableViewer() {
         query = query.order("created_at", { ascending: false });
       }
 
-      const { data: result, error } = await query;
+      const { data: result, error, count } = await query
+        .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
       if (error) throw error;
       setData(result || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error("Error loading table data:", error);
       toast({
@@ -182,16 +206,12 @@ export function AdminTableViewer() {
     }
   };
 
-  useEffect(() => {
-    if (sortColumn) {
-      loadTableData();
-    }
-  }, [sortColumn, sortDirection]);
-
   const handleDelete = async () => {
     if (!deleteConfirm) return;
 
     try {
+      const recordToDelete = data.find(row => row.id === deleteConfirm.id);
+      
       const { error } = await supabase
         .from(deleteConfirm.table)
         .delete()
@@ -199,20 +219,54 @@ export function AdminTableViewer() {
 
       if (error) throw error;
 
-      setData(data.filter(row => row.id !== deleteConfirm.id));
-      toast({
-        title: "Deleted",
-        description: "Record deleted successfully.",
+      await logAdminAction({
+        action: "DELETE",
+        tableName: deleteConfirm.table,
+        recordId: deleteConfirm.id,
+        oldValues: recordToDelete as Record<string, unknown>,
       });
+
+      setData(data.filter(row => row.id !== deleteConfirm.id));
+      setTotalCount(prev => prev - 1);
+      toast({ title: "Deleted", description: "Record deleted successfully." });
     } catch (error) {
       console.error("Error deleting record:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete record.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to delete record.", variant: "destructive" });
     } finally {
       setDeleteConfirm(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+
+    try {
+      const idsToDelete = Array.from(selectedIds);
+      const recordsToDelete = data.filter(row => selectedIds.has(String(row.id)));
+      
+      const { error } = await supabase
+        .from(selectedTable)
+        .delete()
+        .in("id", idsToDelete);
+
+      if (error) throw error;
+
+      await logAdminAction({
+        action: "BULK_DELETE",
+        tableName: selectedTable,
+        recordId: idsToDelete.join(","),
+        oldValues: { deleted_records: recordsToDelete },
+      });
+
+      setData(data.filter(row => !selectedIds.has(String(row.id))));
+      setTotalCount(prev => prev - selectedIds.size);
+      setSelectedIds(new Set());
+      toast({ title: "Deleted", description: `${idsToDelete.length} records deleted successfully.` });
+    } catch (error) {
+      console.error("Error bulk deleting:", error);
+      toast({ title: "Error", description: "Failed to delete records.", variant: "destructive" });
+    } finally {
+      setBulkDeleteConfirm(false);
     }
   };
 
@@ -243,22 +297,23 @@ export function AdminTableViewer() {
 
       if (error) throw error;
 
+      await logAdminAction({
+        action: "UPDATE",
+        tableName: selectedTable,
+        recordId: String(editingRow.id),
+        oldValues: editingRow,
+        newValues: formData,
+      });
+
       setData(data.map(row => 
         row.id === editingRow.id ? { ...row, ...formData } : row
       ));
-      toast({
-        title: "Updated",
-        description: "Record updated successfully.",
-      });
+      toast({ title: "Updated", description: "Record updated successfully." });
       setEditingRow(null);
       setFormData({});
     } catch (error) {
       console.error("Error updating record:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update record.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to update record.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -276,28 +331,48 @@ export function AdminTableViewer() {
 
       if (error) throw error;
 
-      setData([newRecord as Record<string, unknown>, ...data]);
-      toast({
-        title: "Created",
-        description: "Record created successfully.",
+      await logAdminAction({
+        action: "CREATE",
+        tableName: selectedTable,
+        recordId: String((newRecord as Record<string, unknown>).id),
+        newValues: newRecord as Record<string, unknown>,
       });
+
+      setData([newRecord as Record<string, unknown>, ...data]);
+      setTotalCount(prev => prev + 1);
+      toast({ title: "Created", description: "Record created successfully." });
       setCreateDialogOpen(false);
       setFormData({});
     } catch (error) {
       console.error("Error creating record:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create record.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to create record.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
+  const toggleSelectAll = () => {
+    if (selectedIds.size === data.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(data.map(row => String(row.id))));
+    }
+  };
+
+  const toggleSelectRow = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
   const currentTableInfo = TABLES.find(t => t.name === selectedTable);
   const fieldConfigs = getFieldConfigs(selectedTable);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const filteredData = data.filter(row => {
     if (!searchTerm) return true;
@@ -320,7 +395,6 @@ export function AdminTableViewer() {
       setFormData(prev => ({ ...prev, [config.name]: newValue }));
     };
 
-    // For edit mode, skip fields that aren't editable
     if (!isCreate && !currentTableInfo?.editableFields.includes(config.name)) {
       return null;
     }
@@ -416,11 +490,17 @@ export function AdminTableViewer() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {currentTableInfo?.canCreate && (
-                <Button onClick={handleCreate} className="gap-1 flex-1 sm:flex-none">
+                <Button onClick={handleCreate} className="gap-1">
                   <Plus className="w-4 h-4" />
-                  <span className="sm:inline">Add</span>
+                  <span className="hidden sm:inline">Add</span>
+                </Button>
+              )}
+              {selectedIds.size > 0 && currentTableInfo?.canDelete && (
+                <Button variant="destructive" onClick={() => setBulkDeleteConfirm(true)} className="gap-1">
+                  <Trash2 className="w-4 h-4" />
+                  Delete ({selectedIds.size})
                 </Button>
               )}
               <Button variant="outline" size="icon" onClick={loadTableData} disabled={loading}>
@@ -444,7 +524,6 @@ export function AdminTableViewer() {
           </div>
         </div>
 
-        {/* Table - Desktop */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -457,43 +536,41 @@ export function AdminTableViewer() {
           <>
             {/* Mobile Card View */}
             <div className="block md:hidden space-y-3">
-              {filteredData.slice(0, 20).map((row, index) => (
+              {filteredData.map((row, index) => (
                 <motion.div
                   key={String(row.id)}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
-                  className="border rounded-lg p-4 bg-card"
+                  className={`border rounded-lg p-4 bg-card ${selectedIds.has(String(row.id)) ? "ring-2 ring-primary" : ""}`}
                 >
-                  <div className="space-y-2">
-                    {columns.slice(0, 4).map(column => (
-                      <div key={column} className="flex justify-between items-start gap-2">
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {column.replace(/_/g, " ")}
-                        </span>
-                        <span className="text-sm font-mono text-right truncate max-w-[60%]">
-                          {formatCellValue(row[column])}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="flex items-start gap-3">
+                    {currentTableInfo?.canDelete && (
+                      <Checkbox
+                        checked={selectedIds.has(String(row.id))}
+                        onCheckedChange={() => toggleSelectRow(String(row.id))}
+                      />
+                    )}
+                    <div className="flex-1 space-y-2">
+                      {columns.slice(0, 4).map(column => (
+                        <div key={column} className="flex justify-between items-start gap-2">
+                          <span className="text-xs text-muted-foreground capitalize">
+                            {column.replace(/_/g, " ")}
+                          </span>
+                          <span className="text-sm font-mono text-right truncate max-w-[60%]">
+                            {formatCellValue(row[column])}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div className="flex gap-2 mt-3 pt-3 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedRow(row)}
-                      className="flex-1"
-                    >
+                    <Button variant="outline" size="sm" onClick={() => setSelectedRow(row)} className="flex-1">
                       <Eye className="w-4 h-4 mr-1" />
                       View
                     </Button>
                     {currentTableInfo?.canEdit && currentTableInfo.editableFields.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(row)}
-                        className="flex-1"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(row)} className="flex-1">
                         <Pencil className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
@@ -519,6 +596,14 @@ export function AdminTableViewer() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      {currentTableInfo?.canDelete && (
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedIds.size === data.length && data.length > 0}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </TableHead>
+                      )}
                       {columns.slice(0, 6).map(column => (
                         <TableHead
                           key={column}
@@ -545,8 +630,16 @@ export function AdminTableViewer() {
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ delay: index * 0.02 }}
-                          className="border-b"
+                          className={`border-b ${selectedIds.has(String(row.id)) ? "bg-primary/5" : ""}`}
                         >
+                          {currentTableInfo?.canDelete && (
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedIds.has(String(row.id))}
+                                onCheckedChange={() => toggleSelectRow(String(row.id))}
+                              />
+                            </TableCell>
+                          )}
                           {columns.slice(0, 6).map(column => (
                             <TableCell key={column} className="font-mono text-sm">
                               {formatCellValue(row[column])}
@@ -554,21 +647,11 @@ export function AdminTableViewer() {
                           ))}
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setSelectedRow(row)}
-                                title="View"
-                              >
+                              <Button variant="ghost" size="icon" onClick={() => setSelectedRow(row)} title="View">
                                 <Eye className="w-4 h-4" />
                               </Button>
                               {currentTableInfo?.canEdit && currentTableInfo.editableFields.length > 0 && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEdit(row)}
-                                  title="Edit"
-                                >
+                                <Button variant="ghost" size="icon" onClick={() => handleEdit(row)} title="Edit">
                                   <Pencil className="w-4 h-4" />
                                 </Button>
                               )}
@@ -592,17 +675,38 @@ export function AdminTableViewer() {
                 </Table>
               </ScrollArea>
             </div>
+
+            {/* Pagination */}
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span>
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount}
+                </span>
+                {currentTableInfo?.canEdit && <Badge variant="secondary">Editable</Badge>}
+                {currentTableInfo?.canCreate && <Badge variant="secondary">Can Create</Badge>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm">Page {currentPage} of {totalPages || 1}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </>
         )}
-
-        <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-sm text-muted-foreground">
-          <span>Showing {filteredData.length} of {data.length} records (max 100)</span>
-          <div className="flex flex-wrap items-center gap-2">
-            {currentTableInfo?.canEdit && <Badge variant="secondary">Editable</Badge>}
-            {currentTableInfo?.canCreate && <Badge variant="secondary">Can Create</Badge>}
-            <Badge variant="outline">{currentTableInfo?.description}</Badge>
-          </div>
-        </div>
       </CardContent>
 
       {/* View Record Dialog */}
@@ -685,6 +789,27 @@ export function AdminTableViewer() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Delete {selectedIds.size} Records
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedIds.size} records? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
