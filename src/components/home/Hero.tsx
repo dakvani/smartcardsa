@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { SubmitButton } from "@/components/ui/form-feedback";
 
 export function Hero() {
@@ -20,12 +20,10 @@ export function Hero() {
     
     setFormStatus("loading");
     
-    // Simulate a brief loading state for micro-interaction feel
     await new Promise(resolve => setTimeout(resolve, 800));
     
     setFormStatus("success");
     
-    // Navigate after success animation
     setTimeout(() => {
       navigate(`/auth?signup=true&username=${encodeURIComponent(username.trim())}`);
     }, 600);
@@ -62,139 +60,142 @@ export function Hero() {
         className="container mx-auto px-4 relative z-10"
         style={{ opacity: contentOpacity, scale: contentScale }}
       >
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-medium mb-8 text-foreground/80"
-          >
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span>Trusted by 30M+ creators worldwide</span>
-          </motion.div>
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-7xl mx-auto">
+          {/* Left side - Text content */}
+          <div className="text-left order-2 lg:order-1">
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm font-medium mb-8 text-foreground/80"
+            >
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span>Trusted by 30M+ creators worldwide</span>
+            </motion.div>
 
-          {/* Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-balance text-foreground/95"
-          >
-            Everything you are.{" "}
-            <span className="gradient-text">In one simple link.</span>
-          </motion.h1>
+            {/* Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-balance text-foreground/95"
+            >
+              Everything you are.{" "}
+              <span className="gradient-text">In one simple link.</span>
+            </motion.h1>
 
-          {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto"
-          >
-            Join millions of creators using SmartCard for their link in bio. One link to help you share everything you create, curate, and sell.
-          </motion.p>
+            {/* Subheadline */}
+            <motion.p
+              initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="text-lg sm:text-xl text-muted-foreground mb-10 max-w-xl"
+            >
+              Join millions of creators using SmartCard for their link in bio. One link to help you share everything you create, curate, and sell.
+            </motion.p>
 
-          {/* Claim Input */}
-          <motion.form
-            initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            onSubmit={handleClaim}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto"
-          >
-            <div className="relative flex-1 w-full">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                <span className="text-muted-foreground font-medium">smartcard.online/</span>
+            {/* Claim Input */}
+            <motion.form
+              initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              onSubmit={handleClaim}
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 max-w-lg"
+            >
+              <div className="relative flex-1">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                  <span className="text-muted-foreground font-medium text-sm sm:text-base">smartcard.online/</span>
+                </div>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
+                  placeholder="yourname"
+                  disabled={formStatus === "loading" || formStatus === "success"}
+                  className="w-full h-14 pl-[140px] sm:pl-[156px] pr-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary/30 transition-all disabled:opacity-50"
+                />
               </div>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
-                placeholder="yourname"
-                disabled={formStatus === "loading" || formStatus === "success"}
-                className="w-full h-14 pl-[156px] pr-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary/30 transition-all disabled:opacity-50"
+              <SubmitButton
+                status={formStatus}
+                idleText="Claim your SmartCard"
+                loadingText="Claiming..."
+                successText="Redirecting..."
+                className="w-full sm:w-auto h-14 px-6"
               />
-            </div>
-            <SubmitButton
-              status={formStatus}
-              idleText="Claim your SmartCard"
-              loadingText="Claiming..."
-              successText="Redirecting..."
-              className="w-full sm:w-auto h-14 px-6"
-            />
-          </motion.form>
+            </motion.form>
 
-          {/* Social Proof */}
+            {/* Social Proof */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="mt-12"
+            >
+              <p className="text-sm text-muted-foreground mb-4">Trusted by creators at</p>
+              <div className="flex flex-wrap items-center gap-4 sm:gap-8 text-muted-foreground/40">
+                {["TikTok", "Instagram", "YouTube", "Spotify", "Twitch"].map((brand, index) => (
+                  <motion.span 
+                    key={brand} 
+                    className="text-base sm:text-lg font-semibold"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 + index * 0.1 }}
+                  >
+                    {brand}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Right side - Phone Mockup */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="mt-16 flex flex-col items-center"
+            initial={{ opacity: 0, x: 80, filter: "blur(20px)" }}
+            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1, delay: 0.4 }}
+            className="flex justify-center lg:justify-end order-1 lg:order-2"
           >
-            <p className="text-sm text-muted-foreground mb-4">Trusted by creators at</p>
-            <div className="flex items-center gap-8 text-muted-foreground/40">
-              {["TikTok", "Instagram", "YouTube", "Spotify", "Twitch"].map((brand, index) => (
-                <motion.span 
-                  key={brand} 
-                  className="text-lg font-semibold"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                >
-                  {brand}
-                </motion.span>
-              ))}
+            <div className="relative">
+              {/* Phone frame */}
+              <motion.div 
+                className="w-[260px] sm:w-[300px] h-[520px] sm:h-[600px] rounded-[40px] bg-card/80 backdrop-blur-xl p-3 shadow-elevated border border-border/30"
+                whileHover={{ y: -10 }}
+                transition={{ duration: 0.4 }}
+              >
+                <div className="w-full h-full rounded-[32px] bg-gradient-to-b from-primary/20 to-accent/30 overflow-hidden relative backdrop-blur-sm">
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-card rounded-b-2xl" />
+                  
+                  {/* Profile content */}
+                  <div className="pt-12 px-6 text-center">
+                    <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/60 to-accent/60 mb-4 shadow-glow" />
+                    <h3 className="text-foreground font-bold text-lg">@creator</h3>
+                    <p className="text-muted-foreground text-sm mt-1">Digital creator & artist</p>
+                    
+                    {/* Links */}
+                    <div className="mt-6 space-y-3">
+                      {["My Portfolio", "Latest Video", "Shop Merch", "Tip Jar"].map((link, i) => (
+                        <motion.div
+                          key={link}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.8 + i * 0.1 }}
+                          className="w-full py-3 px-4 rounded-xl glass text-foreground/80 text-sm font-medium"
+                        >
+                          {link}
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+              
+              {/* Glow effect */}
+              <div className="absolute -inset-8 bg-primary/10 blur-[80px] -z-10 rounded-full" />
             </div>
           </motion.div>
         </div>
-
-        {/* Phone Mockup */}
-        <motion.div
-          initial={{ opacity: 0, y: 80, filter: "blur(20px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1, delay: 0.4 }}
-          className="mt-20 flex justify-center"
-        >
-          <div className="relative">
-            {/* Phone frame */}
-            <motion.div 
-              className="w-[280px] h-[580px] rounded-[40px] bg-card/80 backdrop-blur-xl p-3 shadow-elevated border border-border/30"
-              whileHover={{ y: -10 }}
-              transition={{ duration: 0.4 }}
-            >
-              <div className="w-full h-full rounded-[32px] bg-gradient-to-b from-primary/20 to-accent/30 overflow-hidden relative backdrop-blur-sm">
-                {/* Notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-card rounded-b-2xl" />
-                
-                {/* Profile content */}
-                <div className="pt-12 px-6 text-center">
-                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/60 to-accent/60 mb-4 shadow-glow" />
-                  <h3 className="text-foreground font-bold text-lg">@creator</h3>
-                  <p className="text-muted-foreground text-sm mt-1">Digital creator & artist</p>
-                  
-                  {/* Links */}
-                  <div className="mt-6 space-y-3">
-                    {["My Portfolio", "Latest Video", "Shop Merch", "Tip Jar"].map((link, i) => (
-                      <motion.div
-                        key={link}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.8 + i * 0.1 }}
-                        className="w-full py-3 px-4 rounded-xl glass text-foreground/80 text-sm font-medium"
-                      >
-                        {link}
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            
-            {/* Glow effect */}
-            <div className="absolute -inset-8 bg-primary/10 blur-[80px] -z-10 rounded-full" />
-          </div>
-        </motion.div>
       </motion.div>
     </section>
   );

@@ -1,24 +1,27 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logAdminAction } from "@/hooks/use-audit-log";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
   Search,
   Shield,
   ShieldCheck,
-  ShieldAlert,
   User,
   Crown,
   RefreshCw,
   Plus,
-  Trash2,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -50,6 +53,8 @@ const roleColors: Record<AppRole, string> = {
   user: "bg-gray-500/10 text-gray-500 border-gray-500/20",
 };
 
+const PAGE_SIZE = 25;
+
 export function AdminUserManager() {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRoles[]>([]);
@@ -59,27 +64,38 @@ export function AdminUserManager() {
   const [selectedRole, setSelectedRole] = useState<AppRole>("user");
   const [removeRoleConfirm, setRemoveRoleConfirm] = useState<{ userId: string; role: AppRole; username: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkRoleDialog, setBulkRoleDialog] = useState(false);
+  const [bulkRole, setBulkRole] = useState<AppRole>("user");
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [currentPage]);
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      // Get all profiles
-      const { data: profiles, error: profilesError } = await supabase
+      // Get paginated profiles
+      const { data: profiles, error: profilesError, count } = await supabase
         .from("profiles")
-        .select("id, user_id, username, title, avatar_url, created_at")
+        .select("id, user_id, username, title, avatar_url, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
       if (profilesError) throw profilesError;
 
-      // Get all roles
+      // Get all roles for these users
+      const userIds = (profiles || []).map(p => p.user_id);
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
-        .select("user_id, role");
+        .select("user_id, role")
+        .in("user_id", userIds);
 
       if (rolesError) throw rolesError;
 
@@ -92,6 +108,7 @@ export function AdminUserManager() {
       }));
 
       setUsers(usersWithRoles);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error("Error loading users:", error);
       toast({
@@ -118,15 +135,18 @@ export function AdminUserManager() {
 
       if (error) {
         if (error.code === "23505") {
-          toast({
-            title: "Role exists",
-            description: "This user already has this role.",
-            variant: "destructive",
-          });
+          toast({ title: "Role exists", description: "This user already has this role.", variant: "destructive" });
           return;
         }
         throw error;
       }
+
+      await logAdminAction({
+        action: "CREATE",
+        tableName: "user_roles",
+        recordId: addRoleDialog.userId,
+        newValues: { user_id: addRoleDialog.userId, role: selectedRole },
+      });
 
       setUsers(users.map(user =>
         user.user_id === addRoleDialog.userId
@@ -134,18 +154,11 @@ export function AdminUserManager() {
           : user
       ));
 
-      toast({
-        title: "Role added",
-        description: `${selectedRole} role added to ${addRoleDialog.username}.`,
-      });
+      toast({ title: "Role added", description: `${selectedRole} role added to ${addRoleDialog.username}.` });
       setAddRoleDialog(null);
     } catch (error) {
       console.error("Error adding role:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add role.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to add role.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -164,33 +177,90 @@ export function AdminUserManager() {
 
       if (error) throw error;
 
+      await logAdminAction({
+        action: "DELETE",
+        tableName: "user_roles",
+        recordId: removeRoleConfirm.userId,
+        oldValues: { user_id: removeRoleConfirm.userId, role: removeRoleConfirm.role },
+      });
+
       setUsers(users.map(user =>
         user.user_id === removeRoleConfirm.userId
           ? { ...user, roles: user.roles.filter(r => r !== removeRoleConfirm.role) }
           : user
       ));
 
-      toast({
-        title: "Role removed",
-        description: `${removeRoleConfirm.role} role removed from ${removeRoleConfirm.username}.`,
-      });
+      toast({ title: "Role removed", description: `${removeRoleConfirm.role} role removed from ${removeRoleConfirm.username}.` });
       setRemoveRoleConfirm(null);
     } catch (error) {
       console.error("Error removing role:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove role.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to remove role.", variant: "destructive" });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleBulkAddRole = async () => {
+    if (selectedIds.size === 0) return;
+
+    setSaving(true);
+    try {
+      const userIds = Array.from(selectedIds);
+      const inserts = userIds.map(userId => ({
+        user_id: userId,
+        role: bulkRole,
+      }));
+
+      const { error } = await supabase
+        .from("user_roles")
+        .upsert(inserts, { onConflict: "user_id,role" });
+
+      if (error) throw error;
+
+      await logAdminAction({
+        action: "BULK_UPDATE",
+        tableName: "user_roles",
+        recordId: userIds.join(","),
+        newValues: { role: bulkRole, user_count: userIds.length },
+      });
+
+      // Reload to get fresh data
+      await loadUsers();
+      setSelectedIds(new Set());
+      toast({ title: "Roles updated", description: `${bulkRole} role added to ${userIds.length} users.` });
+      setBulkRoleDialog(false);
+    } catch (error) {
+      console.error("Error bulk adding roles:", error);
+      toast({ title: "Error", description: "Failed to add roles.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === users.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(users.map(u => u.user_id)));
+    }
+  };
+
+  const toggleSelectRow = (userId: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedIds(newSelected);
   };
 
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.roles.some(role => role.includes(searchTerm.toLowerCase()))
   );
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <Card>
@@ -203,10 +273,18 @@ export function AdminUserManager() {
             </CardTitle>
             <CardDescription>Manage user roles and permissions</CardDescription>
           </div>
-          <Button variant="outline" onClick={loadUsers} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            {selectedIds.size > 0 && (
+              <Button onClick={() => setBulkRoleDialog(true)} className="gap-1">
+                <Plus className="w-4 h-4" />
+                Bulk Add Role ({selectedIds.size})
+              </Button>
+            )}
+            <Button variant="outline" onClick={loadUsers} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -242,9 +320,13 @@ export function AdminUserManager() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
-                  className="border rounded-lg p-4 bg-card"
+                  className={`border rounded-lg p-4 bg-card ${selectedIds.has(user.user_id) ? "ring-2 ring-primary" : ""}`}
                 >
                   <div className="flex items-start gap-3 mb-3">
+                    <Checkbox
+                      checked={selectedIds.has(user.user_id)}
+                      onCheckedChange={() => toggleSelectRow(user.user_id)}
+                    />
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={user.avatar_url || undefined} />
                       <AvatarFallback>
@@ -298,6 +380,12 @@ export function AdminUserManager() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedIds.size === users.length && users.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Username</TableHead>
                     <TableHead>Roles</TableHead>
@@ -314,8 +402,14 @@ export function AdminUserManager() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ delay: index * 0.02 }}
-                        className="border-b"
+                        className={`border-b ${selectedIds.has(user.user_id) ? "bg-primary/5" : ""}`}
                       >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(user.user_id)}
+                            onCheckedChange={() => toggleSelectRow(user.user_id)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="w-8 h-8">
@@ -369,12 +463,34 @@ export function AdminUserManager() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination */}
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <span className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} users
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm">Page {currentPage} of {totalPages || 1}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </>
         )}
-
-        <div className="mt-4 text-sm text-muted-foreground">
-          Showing {filteredUsers.length} of {users.length} users
-        </div>
       </CardContent>
 
       {/* Add Role Dialog */}
@@ -418,6 +534,52 @@ export function AdminUserManager() {
             <Button onClick={handleAddRole} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Add Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Add Role Dialog */}
+      <Dialog open={bulkRoleDialog} onOpenChange={setBulkRoleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Role to {selectedIds.size} Users</DialogTitle>
+            <DialogDescription>
+              This will add the selected role to all selected users.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={bulkRole} onValueChange={(v) => setBulkRole(v as AppRole)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    User
+                  </div>
+                </SelectItem>
+                <SelectItem value="moderator">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    Moderator
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-4 h-4" />
+                    Admin
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkRoleDialog(false)}>Cancel</Button>
+            <Button onClick={handleBulkAddRole} disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Add Role to All
             </Button>
           </DialogFooter>
         </DialogContent>

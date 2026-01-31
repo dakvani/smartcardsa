@@ -19,7 +19,8 @@ import {
   RefreshCw,
   ChevronRight,
   BarChart3,
-  Package
+  Package,
+  Clock
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminTableViewer } from "@/components/admin/AdminTableViewer";
 import { AdminUserManager } from "@/components/admin/AdminUserManager";
+import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 
 interface TableStats {
   name: string;
@@ -265,14 +267,18 @@ export default function AdminDashboard() {
             transition={{ delay: 0.3 }}
           >
             <Tabs defaultValue="tables" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
+              <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
                 <TabsTrigger value="tables" className="gap-2">
                   <Database className="w-4 h-4" />
-                  Database Tables
+                  <span className="hidden sm:inline">Database</span>
                 </TabsTrigger>
                 <TabsTrigger value="users" className="gap-2">
                   <Users className="w-4 h-4" />
-                  User Management
+                  <span className="hidden sm:inline">Users</span>
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="gap-2">
+                  <Clock className="w-4 h-4" />
+                  <span className="hidden sm:inline">Audit Logs</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -282,6 +288,10 @@ export default function AdminDashboard() {
 
               <TabsContent value="users">
                 <AdminUserManager />
+              </TabsContent>
+
+              <TabsContent value="audit">
+                <AuditLogViewer />
               </TabsContent>
             </Tabs>
           </motion.div>
