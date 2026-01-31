@@ -18,8 +18,7 @@ import {
   Pencil,
   Save,
   X,
-  CheckSquare,
-  Square,
+  Download,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +33,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { exportToCSV } from "@/lib/csv-export";
 
 type TableName = "profiles" | "nfc_orders" | "product_reviews" | "product_wishlist" | 
                  "profile_views" | "email_subscribers" | "links" | "link_groups" | 
@@ -369,6 +369,33 @@ export function AdminTableViewer() {
     setSelectedIds(newSelected);
   };
 
+  const handleExportCSV = async () => {
+    try {
+      // Fetch all data for export (not just current page)
+      const { data: allData, error } = await supabase
+        .from(selectedTable)
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      exportToCSV(allData || [], `${selectedTable}_${timestamp}`);
+      
+      toast({
+        title: "Export Complete",
+        description: `Exported ${allData?.length || 0} records to CSV`,
+      });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export data to CSV",
+        variant: "destructive",
+      });
+    }
+  };
+
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
   const currentTableInfo = TABLES.find(t => t.name === selectedTable);
   const fieldConfigs = getFieldConfigs(selectedTable);
@@ -503,6 +530,9 @@ export function AdminTableViewer() {
                   Delete ({selectedIds.size})
                 </Button>
               )}
+              <Button variant="outline" size="icon" onClick={handleExportCSV} disabled={loading || data.length === 0} title="Export to CSV">
+                <Download className="w-4 h-4" />
+              </Button>
               <Button variant="outline" size="icon" onClick={loadTableData} disabled={loading}>
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </Button>
