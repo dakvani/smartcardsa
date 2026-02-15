@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminTableViewer } from "@/components/admin/AdminTableViewer";
 import { AdminUserManager } from "@/components/admin/AdminUserManager";
@@ -249,61 +250,83 @@ export default function AdminDashboard() {
             transition={{ delay: 0.1 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
           >
-            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20 cursor-pointer" onClick={() => setActiveTab("orders")}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
-                    <p className="text-3xl font-bold text-foreground mt-1">${totalRevenue.toFixed(2)}</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6 text-green-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20 cursor-pointer" onClick={() => setActiveTab("orders")}>
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
+                          <p className="text-3xl font-bold text-foreground mt-1">${totalRevenue.toFixed(2)}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                          <DollarSign className="w-6 h-6 text-green-500" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent><p>Click to manage orders</p></TooltipContent>
+              </Tooltip>
 
-            <Card className="bg-gradient-to-br from-blue-500/10 to-sky-500/5 border-blue-500/20 cursor-pointer" onClick={() => setActiveTab("users")}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Total Users</p>
-                    <p className="text-3xl font-bold text-foreground mt-1">{stats.find(s => s.name === "Users")?.count.toLocaleString() || 0}</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                    <Users className="w-6 h-6 text-blue-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="bg-gradient-to-br from-blue-500/10 to-sky-500/5 border-blue-500/20 cursor-pointer" onClick={() => setActiveTab("users")}>
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground font-medium">Total Users</p>
+                          <p className="text-3xl font-bold text-foreground mt-1">{stats.find(s => s.name === "Users")?.count.toLocaleString() || 0}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                          <Users className="w-6 h-6 text-blue-500" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent><p>Click to manage users</p></TooltipContent>
+              </Tooltip>
 
-            <Card className="bg-gradient-to-br from-yellow-500/10 to-amber-500/5 border-yellow-500/20 cursor-pointer" onClick={() => setActiveTab("orders")}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Pending Orders</p>
-                    <p className="text-3xl font-bold text-foreground mt-1">{pendingOrders}</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-yellow-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="bg-gradient-to-br from-yellow-500/10 to-amber-500/5 border-yellow-500/20 cursor-pointer" onClick={() => setActiveTab("orders")}>
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground font-medium">Pending Orders</p>
+                          <p className="text-3xl font-bold text-foreground mt-1">{pendingOrders}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                          <Clock className="w-6 h-6 text-yellow-500" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent><p>Click to manage orders</p></TooltipContent>
+              </Tooltip>
 
-            <Card className="bg-gradient-to-br from-purple-500/10 to-violet-500/5 border-purple-500/20 cursor-pointer" onClick={() => setActiveTab("tables")}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">Total Records</p>
-                    <p className="text-3xl font-bold text-foreground mt-1">{totalRecords.toLocaleString()}</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                    <Database className="w-6 h-6 text-purple-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Card className="bg-gradient-to-br from-purple-500/10 to-violet-500/5 border-purple-500/20 cursor-pointer" onClick={() => setActiveTab("tables")}>
+                    <CardContent className="p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground font-medium">Total Records</p>
+                          <p className="text-3xl font-bold text-foreground mt-1">{totalRecords.toLocaleString()}</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                          <Database className="w-6 h-6 text-purple-500" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent><p>Click to manage database</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </motion.div>
 
           {/* Tabs */}
@@ -339,32 +362,39 @@ export default function AdminDashboard() {
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {stats.map((stat, index) => (
-                    <motion.div
-                      key={stat.name}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.05 + index * 0.03 }}
-                    >
-                      <Card className="hover:shadow-md transition-shadow cursor-pointer group" onClick={() => setActiveTab(stat.tab)}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-xl bg-muted ${stat.color}`}>
-                              <stat.icon className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-muted-foreground">{stat.name}</p>
-                              <p className="text-2xl font-bold">{stat.count.toLocaleString()}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{stat.description}</p>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
+                <TooltipProvider delayDuration={200}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {stats.map((stat, index) => (
+                      <motion.div
+                        key={stat.name}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.05 + index * 0.03 }}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Card className="hover:shadow-md transition-shadow cursor-pointer group" onClick={() => setActiveTab(stat.tab)}>
+                              <CardContent className="p-4">
+                                <div className="flex items-center gap-4">
+                                  <div className={`p-3 rounded-xl bg-muted ${stat.color}`}>
+                                    <stat.icon className="w-5 h-5" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-sm text-muted-foreground">{stat.name}</p>
+                                    <p className="text-2xl font-bold">{stat.count.toLocaleString()}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{stat.description}</p>
+                                  </div>
+                                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Click to manage {stat.name.toLowerCase()}</p></TooltipContent>
+                        </Tooltip>
+                      </motion.div>
+                    ))}
+                  </div>
+                </TooltipProvider>
 
                 {/* Recent Activity Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
