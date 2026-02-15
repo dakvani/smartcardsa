@@ -26,6 +26,7 @@ interface TableStats {
   icon: React.ElementType;
   description: string;
   color: string;
+  tab: string;
 }
 
 interface RecentOrder {
@@ -115,15 +116,15 @@ export default function AdminDashboard() {
       ]);
 
       setStats([
-        { name: "Users", count: profilesRes.count || 0, icon: Users, description: "Total registered users", color: "text-blue-500" },
-        { name: "Orders", count: ordersRes.count || 0, icon: ShoppingBag, description: "Total orders placed", color: "text-green-500" },
-        { name: "Reviews", count: reviewsRes.count || 0, icon: Star, description: "Product reviews", color: "text-yellow-500" },
-        { name: "Wishlist", count: wishlistRes.count || 0, icon: Heart, description: "Saved items", color: "text-red-500" },
-        { name: "Views", count: viewsRes.count || 0, icon: Eye, description: "Profile views", color: "text-purple-500" },
-        { name: "Subscribers", count: subscribersRes.count || 0, icon: Mail, description: "Email subscribers", color: "text-cyan-500" },
-        { name: "Links", count: linksRes.count || 0, icon: Link, description: "Active links", color: "text-orange-500" },
-        { name: "Templates", count: templatesRes.count || 0, icon: Palette, description: "Profile templates", color: "text-pink-500" },
-        { name: "Roles", count: rolesRes.count || 0, icon: Shield, description: "Role assignments", color: "text-indigo-500" },
+        { name: "Users", count: profilesRes.count || 0, icon: Users, description: "Total registered users", color: "text-blue-500", tab: "users" },
+        { name: "Orders", count: ordersRes.count || 0, icon: ShoppingBag, description: "Total orders placed", color: "text-green-500", tab: "orders" },
+        { name: "Reviews", count: reviewsRes.count || 0, icon: Star, description: "Product reviews", color: "text-yellow-500", tab: "tables" },
+        { name: "Wishlist", count: wishlistRes.count || 0, icon: Heart, description: "Saved items", color: "text-red-500", tab: "tables" },
+        { name: "Views", count: viewsRes.count || 0, icon: Eye, description: "Profile views", color: "text-purple-500", tab: "tables" },
+        { name: "Subscribers", count: subscribersRes.count || 0, icon: Mail, description: "Email subscribers", color: "text-cyan-500", tab: "tables" },
+        { name: "Links", count: linksRes.count || 0, icon: Link, description: "Active links", color: "text-orange-500", tab: "tables" },
+        { name: "Templates", count: templatesRes.count || 0, icon: Palette, description: "Profile templates", color: "text-pink-500", tab: "tables" },
+        { name: "Roles", count: rolesRes.count || 0, icon: Shield, description: "Role assignments", color: "text-indigo-500", tab: "users" },
       ]);
 
       setRecentOrders((recentOrdersRes.data || []).map(o => ({
@@ -248,7 +249,7 @@ export default function AdminDashboard() {
             transition={{ delay: 0.1 }}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
           >
-            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20">
+            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20 cursor-pointer" onClick={() => setActiveTab("orders")}>
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -262,7 +263,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-blue-500/10 to-sky-500/5 border-blue-500/20">
+            <Card className="bg-gradient-to-br from-blue-500/10 to-sky-500/5 border-blue-500/20 cursor-pointer" onClick={() => setActiveTab("users")}>
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -276,7 +277,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-yellow-500/10 to-amber-500/5 border-yellow-500/20">
+            <Card className="bg-gradient-to-br from-yellow-500/10 to-amber-500/5 border-yellow-500/20 cursor-pointer" onClick={() => setActiveTab("orders")}>
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -290,7 +291,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-500/10 to-violet-500/5 border-purple-500/20">
+            <Card className="bg-gradient-to-br from-purple-500/10 to-violet-500/5 border-purple-500/20 cursor-pointer" onClick={() => setActiveTab("tables")}>
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -346,7 +347,7 @@ export default function AdminDashboard() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.05 + index * 0.03 }}
                     >
-                      <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                      <Card className="hover:shadow-md transition-shadow cursor-pointer group" onClick={() => setActiveTab(stat.tab)}>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-xl bg-muted ${stat.color}`}>
