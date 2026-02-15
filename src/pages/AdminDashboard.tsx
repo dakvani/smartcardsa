@@ -5,23 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Loader2, 
-  Database, 
-  Users, 
-  ShoppingBag, 
-  Star, 
-  Heart, 
-  Eye, 
-  Mail,
-  Link,
-  Palette,
-  Shield,
-  RefreshCw,
-  ChevronRight,
-  BarChart3,
-  Package,
-  Clock,
-  Bell
+  Loader2, Database, Users, ShoppingBag, Star, Heart, Eye, Mail,
+  Link, Palette, Shield, RefreshCw, ChevronRight, BarChart3, Package,
+  Clock, Bell, DollarSign, TrendingUp, Activity, LogOut,
+  ArrowUpRight, ArrowDownRight, FileText, Settings
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +18,7 @@ import { AdminTableViewer } from "@/components/admin/AdminTableViewer";
 import { AdminUserManager } from "@/components/admin/AdminUserManager";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 import { useAdminOrderNotifications } from "@/hooks/use-admin-order-notifications";
+import { format } from "date-fns";
 
 interface TableStats {
   name: string;
@@ -40,6 +28,22 @@ interface TableStats {
   color: string;
 }
 
+interface RecentOrder {
+  id: string;
+  order_number: string;
+  status: string;
+  total: number;
+  created_at: string;
+  shipping_info: { name?: string; email?: string };
+}
+
+interface RecentUser {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  created_at: string;
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -47,8 +51,12 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState<TableStats[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState(0);
+  const [activeTab, setActiveTab] = useState("overview");
   
-  // Real-time order notifications
   const { hasNewOrders, notificationCount, clearNotifications } = useAdminOrderNotifications(isAdmin);
 
   useEffect(() => {
@@ -59,7 +67,7 @@ export default function AdminDashboard() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate("/auth");
+        navigate("/admin-login");
         return;
       }
 
@@ -76,26 +84,20 @@ export default function AdminDashboard() {
       }
 
       setIsAdmin(true);
-      await loadStats();
+      await loadAllData();
     } catch (error) {
       console.error("Error checking admin status:", error);
       setLoading(false);
     }
   };
 
-  const loadStats = async () => {
+  const loadAllData = async () => {
     setRefreshing(true);
     try {
       const [
-        profilesRes,
-        ordersRes,
-        reviewsRes,
-        wishlistRes,
-        viewsRes,
-        subscribersRes,
-        linksRes,
-        templatesRes,
-        rolesRes
+        profilesRes, ordersRes, reviewsRes, wishlistRes, viewsRes,
+        subscribersRes, linksRes, templatesRes, rolesRes,
+        recentOrdersRes, recentUsersRes, revenueRes, pendingRes
       ] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("nfc_orders").select("id", { count: "exact", head: true }),
@@ -106,30 +108,53 @@ export default function AdminDashboard() {
         supabase.from("links").select("id", { count: "exact", head: true }),
         supabase.from("profile_templates").select("id", { count: "exact", head: true }),
         supabase.from("user_roles").select("id", { count: "exact", head: true }),
+        supabase.from("nfc_orders").select("id, order_number, status, total, created_at, shipping_info").order("created_at", { ascending: false }).limit(5),
+        supabase.from("profiles").select("id, username, avatar_url, created_at").order("created_at", { ascending: false }).limit(5),
+        supabase.from("nfc_orders").select("total"),
+        supabase.from("nfc_orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
       setStats([
-        { name: "Profiles", count: profilesRes.count || 0, icon: Users, description: "User profiles", color: "text-blue-500" },
-        { name: "Orders", count: ordersRes.count || 0, icon: ShoppingBag, description: "NFC product orders", color: "text-green-500" },
+        { name: "Users", count: profilesRes.count || 0, icon: Users, description: "Total registered users", color: "text-blue-500" },
+        { name: "Orders", count: ordersRes.count || 0, icon: ShoppingBag, description: "Total orders placed", color: "text-green-500" },
         { name: "Reviews", count: reviewsRes.count || 0, icon: Star, description: "Product reviews", color: "text-yellow-500" },
-        { name: "Wishlist Items", count: wishlistRes.count || 0, icon: Heart, description: "Saved products", color: "text-red-500" },
-        { name: "Profile Views", count: viewsRes.count || 0, icon: Eye, description: "Analytics data", color: "text-purple-500" },
+        { name: "Wishlist", count: wishlistRes.count || 0, icon: Heart, description: "Saved items", color: "text-red-500" },
+        { name: "Views", count: viewsRes.count || 0, icon: Eye, description: "Profile views", color: "text-purple-500" },
         { name: "Subscribers", count: subscribersRes.count || 0, icon: Mail, description: "Email subscribers", color: "text-cyan-500" },
-        { name: "Links", count: linksRes.count || 0, icon: Link, description: "User links", color: "text-orange-500" },
+        { name: "Links", count: linksRes.count || 0, icon: Link, description: "Active links", color: "text-orange-500" },
         { name: "Templates", count: templatesRes.count || 0, icon: Palette, description: "Profile templates", color: "text-pink-500" },
-        { name: "User Roles", count: rolesRes.count || 0, icon: Shield, description: "Role assignments", color: "text-indigo-500" },
+        { name: "Roles", count: rolesRes.count || 0, icon: Shield, description: "Role assignments", color: "text-indigo-500" },
       ]);
+
+      setRecentOrders((recentOrdersRes.data || []).map(o => ({
+        ...o,
+        shipping_info: typeof o.shipping_info === 'string' ? JSON.parse(o.shipping_info) : o.shipping_info as { name?: string; email?: string },
+      })));
+      setRecentUsers(recentUsersRes.data || []);
+
+      const revenue = (revenueRes.data || []).reduce((sum, o) => sum + Number(o.total), 0);
+      setTotalRevenue(revenue);
+      setPendingOrders(pendingRes.count || 0);
     } catch (error) {
       console.error("Error loading stats:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load database statistics.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load dashboard data.", variant: "destructive" });
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const handleAdminLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/admin-login");
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    shipped: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    delivered: "bg-green-500/10 text-green-600 border-green-500/20",
+    cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
   };
 
   if (loading) {
@@ -137,9 +162,9 @@ export default function AdminDashboard() {
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <main className="flex-1 pt-24 pb-16 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Loading admin dashboard...
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">Loading admin dashboard...</p>
           </div>
         </main>
       </div>
@@ -159,11 +184,10 @@ export default function AdminDashboard() {
               <CardTitle>Access Denied</CardTitle>
               <CardDescription>
                 You don't have permission to access the admin dashboard.
-                Please contact an administrator if you believe this is an error.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <Button onClick={() => navigate("/")}>Return Home</Button>
+              <Button onClick={() => navigate("/admin-login")}>Go to Admin Login</Button>
             </CardContent>
           </Card>
         </main>
@@ -185,107 +209,118 @@ export default function AdminDashboard() {
             className="mb-8"
           >
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                  <Database className="w-8 h-8 text-primary" />
-                  Admin Dashboard
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Manage and monitor your application data
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-7 h-7 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">Admin Control Center</h1>
+                  <p className="text-muted-foreground mt-0.5">Full account overview & management</p>
+                </div>
               </div>
               <div className="flex gap-2 flex-wrap">
                 {hasNewOrders && (
                   <Button
                     variant="default"
-                    onClick={() => {
-                      clearNotifications();
-                      navigate("/admin/orders");
-                    }}
+                    onClick={() => { clearNotifications(); setActiveTab("orders"); }}
                     className="gap-2 animate-pulse"
                   >
                     <Bell className="w-4 h-4" />
                     {notificationCount} New Order{notificationCount > 1 ? 's' : ''}
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  onClick={loadStats}
-                  disabled={refreshing}
-                >
+                <Button variant="outline" onClick={loadAllData} disabled={refreshing}>
                   <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
-                <Button onClick={() => navigate("/admin/orders")}>
-                  <Package className="w-4 h-4 mr-2" />
-                  Manage Orders
+                <Button variant="outline" onClick={handleAdminLogout} className="gap-2 text-destructive hover:text-destructive">
+                  <LogOut className="w-4 h-4" />
+                  Logout
                 </Button>
               </div>
             </div>
           </motion.div>
 
-          {/* Quick Stats */}
+          {/* Key Metrics Row */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
           >
-            <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-              <CardContent className="p-6">
+            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20">
+              <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Records</p>
-                    <p className="text-4xl font-bold text-foreground">{totalRecords.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground font-medium">Total Revenue</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">${totalRevenue.toFixed(2)}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-12 h-12 text-primary/50" />
+                  <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                    <DollarSign className="w-6 h-6 text-green-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-blue-500/10 to-sky-500/5 border-blue-500/20">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">Total Users</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">{stats.find(s => s.name === "Users")?.count.toLocaleString() || 0}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                    <Users className="w-6 h-6 text-blue-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-yellow-500/10 to-amber-500/5 border-yellow-500/20">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">Pending Orders</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">{pendingOrders}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-yellow-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-500/10 to-violet-500/5 border-purple-500/20">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">Total Records</p>
+                    <p className="text-3xl font-bold text-foreground mt-1">{totalRecords.toLocaleString()}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                    <Database className="w-6 h-6 text-purple-500" />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Stats Grid */}
+          {/* Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
           >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.name}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 + index * 0.05 }}
-              >
-                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-lg bg-muted ${stat.color}`}>
-                        <stat.icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground">{stat.name}</p>
-                        <p className="text-2xl font-bold">{stat.count.toLocaleString()}</p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Tabs for different management views */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Tabs defaultValue="tables" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+              <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+                <TabsTrigger value="overview" className="gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Overview</span>
+                </TabsTrigger>
+                <TabsTrigger value="orders" className="gap-2">
+                  <Package className="w-4 h-4" />
+                  <span className="hidden sm:inline">Orders</span>
+                </TabsTrigger>
                 <TabsTrigger value="tables" className="gap-2">
                   <Database className="w-4 h-4" />
                   <span className="hidden sm:inline">Database</span>
@@ -296,9 +331,149 @@ export default function AdminDashboard() {
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="gap-2">
                   <Clock className="w-4 h-4" />
-                  <span className="hidden sm:inline">Audit Logs</span>
+                  <span className="hidden sm:inline">Audit</span>
                 </TabsTrigger>
               </TabsList>
+
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stats.map((stat, index) => (
+                    <motion.div
+                      key={stat.name}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.05 + index * 0.03 }}
+                    >
+                      <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl bg-muted ${stat.color}`}>
+                              <stat.icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-muted-foreground">{stat.name}</p>
+                              <p className="text-2xl font-bold">{stat.count.toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{stat.description}</p>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Recent Activity Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Recent Orders */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <ShoppingBag className="w-5 h-5 text-primary" />
+                          Recent Orders
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" onClick={() => setActiveTab("orders")} className="gap-1 text-xs">
+                          View All <ArrowUpRight className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {recentOrders.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-6">No orders yet</p>
+                      ) : (
+                        recentOrders.map((order) => (
+                          <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm">#{order.order_number}</p>
+                                <Badge variant="outline" className={`text-xs ${statusColors[order.status] || ''}`}>
+                                  {order.status}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                {order.shipping_info?.name || 'Unknown'} • {format(new Date(order.created_at), "MMM d, h:mm a")}
+                              </p>
+                            </div>
+                            <span className="font-bold text-sm">${Number(order.total).toFixed(2)}</span>
+                          </div>
+                        ))
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Users */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Users className="w-5 h-5 text-primary" />
+                          Recent Users
+                        </CardTitle>
+                        <Button variant="ghost" size="sm" onClick={() => setActiveTab("users")} className="gap-1 text-xs">
+                          View All <ArrowUpRight className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {recentUsers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-6">No users yet</p>
+                      ) : (
+                        recentUsers.map((user) => (
+                          <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors">
+                            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                              {user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{user.username}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Joined {format(new Date(user.created_at), "MMM d, yyyy")}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Quick Actions */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-primary" />
+                      Quick Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setActiveTab("orders")}>
+                        <Package className="w-5 h-5 text-primary" />
+                        <span className="text-xs">Manage Orders</span>
+                      </Button>
+                      <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setActiveTab("users")}>
+                        <Users className="w-5 h-5 text-primary" />
+                        <span className="text-xs">Manage Users</span>
+                      </Button>
+                      <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setActiveTab("tables")}>
+                        <Database className="w-5 h-5 text-primary" />
+                        <span className="text-xs">View Database</span>
+                      </Button>
+                      <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setActiveTab("audit")}>
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="text-xs">Audit Logs</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Orders Tab - Inline */}
+              <TabsContent value="orders">
+                <AdminOrdersInline />
+              </TabsContent>
 
               <TabsContent value="tables">
                 <AdminTableViewer />
@@ -316,5 +491,195 @@ export default function AdminDashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Inline Orders Management Component
+function AdminOrdersInline() {
+  const { toast } = useToast();
+  const [orders, setOrders] = useState<RecentOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  interface RecentOrder {
+    id: string;
+    order_number: string;
+    status: string;
+    total: number;
+    subtotal: number;
+    shipping_cost: number;
+    created_at: string;
+    updated_at: string;
+    shipping_info: Record<string, string>;
+    items: Record<string, unknown>[];
+  }
+
+  useEffect(() => { loadOrders(); }, []);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("nfc_orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setOrders((data || []).map(o => ({
+        ...o,
+        items: typeof o.items === 'string' ? JSON.parse(o.items) : o.items,
+        shipping_info: typeof o.shipping_info === 'string' ? JSON.parse(o.shipping_info) : o.shipping_info,
+      })) as RecentOrder[]);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order || order.status === newStatus) return;
+    setUpdatingOrder(orderId);
+    try {
+      const { error } = await supabase
+        .from("nfc_orders")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", orderId);
+      if (error) throw error;
+
+      if (["processing", "shipped", "delivered"].includes(newStatus)) {
+        try {
+          await supabase.functions.invoke("send-order-email", {
+            body: {
+              to: order.shipping_info?.email,
+              orderNumber: order.order_number,
+              status: newStatus,
+              customerName: order.shipping_info?.name,
+            },
+          });
+        } catch {}
+      }
+
+      setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      toast({ title: "Updated", description: `Order #${order.order_number} → ${newStatus}` });
+    } catch {
+      toast({ title: "Error", description: "Failed to update order.", variant: "destructive" });
+    } finally {
+      setUpdatingOrder(null);
+    }
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+    processing: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    shipped: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    delivered: "bg-green-500/10 text-green-600 border-green-500/20",
+    cancelled: "bg-red-500/10 text-red-600 border-red-500/20",
+  };
+
+  const statusOptions = ["pending", "processing", "shipped", "delivered", "cancelled"];
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Order Management
+            </CardTitle>
+            <CardDescription>{orders.length} total orders</CardDescription>
+          </div>
+          <Button variant="outline" onClick={loadOrders} size="sm">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {orders.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No orders yet</p>
+          </div>
+        ) : (
+          orders.map((order) => (
+            <div key={order.id} className="border rounded-xl overflow-hidden">
+              <button
+                onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">#{order.order_number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.shipping_info?.name} • {format(new Date(order.created_at), "MMM d, h:mm a")}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className={statusColors[order.status] || ''}>
+                    {order.status}
+                  </Badge>
+                  <span className="font-bold">${Number(order.total).toFixed(2)}</span>
+                  <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${expandedOrder === order.id ? 'rotate-90' : ''}`} />
+                </div>
+              </button>
+              {expandedOrder === order.id && (
+                <div className="border-t p-4 bg-muted/20 space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Shipping Info</h4>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p className="text-foreground font-medium">{order.shipping_info?.name}</p>
+                        <p>{order.shipping_info?.email}</p>
+                        <p>{order.shipping_info?.address}</p>
+                        <p>{order.shipping_info?.city}, {order.shipping_info?.country}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Update Status</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {statusOptions.map(status => (
+                          <Button
+                            key={status}
+                            variant={order.status === status ? "default" : "outline"}
+                            size="sm"
+                            className="text-xs capitalize"
+                            disabled={updatingOrder === order.id}
+                            onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, status); }}
+                          >
+                            {updatingOrder === order.id ? <Loader2 className="w-3 h-3 animate-spin" /> : status}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm border-t pt-3">
+                    <span className="text-muted-foreground">Subtotal: ${Number(order.subtotal).toFixed(2)}</span>
+                    <span className="text-muted-foreground">Shipping: {Number(order.shipping_cost) === 0 ? "Free" : `$${Number(order.shipping_cost).toFixed(2)}`}</span>
+                    <span className="font-bold">Total: ${Number(order.total).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
   );
 }
