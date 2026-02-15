@@ -7,6 +7,7 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { BackToTopButton } from "./BackToTopButton";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
+import AdminLogin from "@/pages/AdminLogin";
 import Pricing from "@/pages/Pricing";
 import Templates from "@/pages/Templates";
 import Products from "@/pages/Products";
@@ -34,6 +35,7 @@ export function AnimatedRoutes() {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><Index /></PageTransition>} />
           <Route path="/auth" element={<PageTransition><Auth /></PageTransition>} />
+          <Route path="/admin-login" element={<PageTransition><AdminLogin /></PageTransition>} />
           <Route path="/pricing" element={<PageTransition><Pricing /></PageTransition>} />
           <Route path="/templates" element={<PageTransition><Templates /></PageTransition>} />
           <Route path="/products" element={<PageTransition><Products /></PageTransition>} />

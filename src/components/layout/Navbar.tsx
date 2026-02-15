@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
-import { Menu, X, LayoutDashboard, Home, Settings, Package, LogOut, User, ChevronDown, Shield } from "lucide-react";
+import { Menu, X, LayoutDashboard, Home, Settings, Package, LogOut, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +34,7 @@ export function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  
   const lastScrollY = useRef(0);
   
   const { scrollY } = useScroll();
@@ -47,7 +47,6 @@ export function Navbar() {
       setUserEmail(user?.email ?? null);
       if (user) {
         fetchUserProfile(user.id);
-        checkAdminRole(user.id);
       }
     });
 
@@ -56,10 +55,8 @@ export function Navbar() {
       setUserEmail(session?.user?.email ?? null);
       if (session?.user) {
         setTimeout(() => fetchUserProfile(session.user.id), 0);
-        setTimeout(() => checkAdminRole(session.user.id), 0);
       } else {
         setAvatarUrl(null);
-        setIsAdmin(false);
       }
     });
 
@@ -77,15 +74,6 @@ export function Navbar() {
     }
   };
 
-  const checkAdminRole = async (userId: string) => {
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-    setIsAdmin(!!data);
-  };
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -252,14 +240,6 @@ export function Navbar() {
                       Order History
                     </Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin" className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Admin Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
@@ -383,14 +363,6 @@ export function Navbar() {
                       Settings
                     </Button>
                   </Link>
-                  {isAdmin && (
-                    <Link to="/admin" onClick={() => setMobileOpen(false)}>
-                      <Button variant="outline" className="w-full border-border/50 text-primary" aria-label="Go to admin dashboard">
-                        <Shield className="w-4 h-4 mr-2" />
-                        Admin Dashboard
-                      </Button>
-                    </Link>
-                  )}
                   <Button 
                     variant="ghost" 
                     className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" 
