@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowLeft, Loader2, Shield } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Loader2, Shield, CheckCircle2, XCircle } from "lucide-react";
+import { useUsernameCheck } from "@/hooks/use-username-check";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -19,6 +20,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const { isChecking: usernameChecking, isTaken: usernameTaken, suggestions: usernameSuggestions, hasChecked: usernameHasChecked } = useUsernameCheck(mode === "signup" ? username : "");
 
   useEffect(() => {
     // Check if user is already logged in
@@ -57,6 +59,11 @@ export default function Auth() {
           toast.success("Password reset email sent! Check your inbox.");
         }
       } else if (mode === "signup") {
+        if (usernameTaken) {
+          toast.error("This username is already taken. Please choose a different one.");
+          setLoading(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -237,7 +244,45 @@ export default function Auth() {
                       className="w-full h-12 pl-[140px] pr-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                       required
                     />
-                  </div>
+                   </div>
+                  {/* Username availability feedback */}
+                  {username.trim().length >= 3 && (
+                    <div className="mt-2">
+                      {usernameChecking ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Checking...</span>
+                        </div>
+                      ) : usernameHasChecked && !usernameTaken ? (
+                        <div className="flex items-center gap-2 text-sm text-green-500">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>{username} is available</span>
+                        </div>
+                      ) : usernameHasChecked && usernameTaken ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-destructive">
+                            <XCircle className="w-3 h-3" />
+                            <span>{username} is taken</span>
+                          </div>
+                          {usernameSuggestions.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              <span className="text-xs text-muted-foreground">Try:</span>
+                              {usernameSuggestions.map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  onClick={() => setUsername(s)}
+                                  className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -288,7 +333,7 @@ export default function Auth() {
                 </div>
               )}
 
-              <Button type="submit" variant="gradient" className="w-full h-12" disabled={loading}>
+              <Button type="submit" variant="gradient" className="w-full h-12" disabled={loading || (mode === "signup" && (usernameTaken || usernameChecking))}>
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : mode === "forgot" ? (

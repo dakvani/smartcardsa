@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { Sparkles, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { SubmitButton } from "@/components/ui/form-feedback";
 import { PhoneMockup } from "./PhoneMockup";
+import { useUsernameCheck } from "@/hooks/use-username-check";
 
 export function Hero() {
   const [username, setUsername] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const navigate = useNavigate();
   
+  const { isChecking, isTaken, suggestions, hasChecked } = useUsernameCheck(username);
+
   const { scrollYProgress } = useScroll();
   const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0.3]);
@@ -17,7 +20,7 @@ export function Hero() {
 
   const handleClaim = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
+    if (!username.trim() || isTaken || isChecking) return;
     
     setFormStatus("loading");
     
@@ -123,8 +126,52 @@ export function Hero() {
                 loadingText="Claiming..."
                 successText="Redirecting..."
                 className="w-full sm:w-auto h-14 px-6"
+                disabled={isTaken || isChecking}
               />
             </motion.form>
+
+            {/* Username availability feedback */}
+            {username.trim().length >= 3 && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 max-w-lg"
+              >
+                {isChecking ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Checking availability...</span>
+                  </div>
+                ) : hasChecked && !isTaken ? (
+                  <div className="flex items-center gap-2 text-sm text-green-500">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span><strong>{username}</strong> is available!</span>
+                  </div>
+                ) : hasChecked && isTaken ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-destructive">
+                      <XCircle className="w-4 h-4" />
+                      <span><strong>{username}</strong> is already taken</span>
+                    </div>
+                    {suggestions.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-xs text-muted-foreground">Try:</span>
+                        {suggestions.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setUsername(s)}
+                            className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </motion.div>
+            )}
 
             {/* Social Proof */}
             <motion.div
