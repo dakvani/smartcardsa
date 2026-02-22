@@ -19,6 +19,7 @@ import { AdminTableViewer } from "@/components/admin/AdminTableViewer";
 import { AdminUserManager } from "@/components/admin/AdminUserManager";
 import { AuditLogViewer } from "@/components/admin/AuditLogViewer";
 import { useAdminOrderNotifications } from "@/hooks/use-admin-order-notifications";
+import { AdminOverviewCharts } from "@/components/admin/AdminOverviewCharts";
 import { format } from "date-fns";
 
 interface TableStats {
@@ -395,6 +396,9 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 </TooltipProvider>
+
+                {/* Analytics Charts */}
+                <AdminOverviewCharts />
 
                 {/* Recent Activity Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
