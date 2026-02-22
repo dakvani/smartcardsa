@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { SubmitButton } from "@/components/ui/form-feedback";
+import { PhoneMockup } from "./PhoneMockup";
 
 export function Hero() {
   const [username, setUsername] = useState("");
@@ -154,46 +155,9 @@ export function Hero() {
             initial={{ opacity: 0, x: 80, filter: "blur(20px)" }}
             animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
             transition={{ duration: 1, delay: 0.4 }}
-            className="flex justify-center lg:justify-end order-1 lg:order-2"
+            className="order-1 lg:order-2"
           >
-            <div className="relative">
-              {/* Phone frame */}
-              <motion.div 
-                className="w-[260px] sm:w-[300px] h-[520px] sm:h-[600px] rounded-[40px] bg-card/80 backdrop-blur-xl p-3 shadow-elevated border border-border/30"
-                whileHover={{ y: -10 }}
-                transition={{ duration: 0.4 }}
-              >
-                <div className="w-full h-full rounded-[32px] bg-gradient-to-b from-primary/20 to-accent/30 overflow-hidden relative backdrop-blur-sm">
-                  {/* Notch */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-card rounded-b-2xl" />
-                  
-                  {/* Profile content */}
-                  <div className="pt-12 px-6 text-center">
-                    <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/60 to-accent/60 mb-4 shadow-glow" />
-                    <h3 className="text-foreground font-bold text-lg">@creator</h3>
-                    <p className="text-muted-foreground text-sm mt-1">Digital creator & artist</p>
-                    
-                    {/* Links */}
-                    <div className="mt-6 space-y-3">
-                      {["My Portfolio", "Latest Video", "Shop Merch", "Tip Jar"].map((link, i) => (
-                        <motion.div
-                          key={link}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.8 + i * 0.1 }}
-                          className="w-full py-3 px-4 rounded-xl glass text-foreground/80 text-sm font-medium"
-                        >
-                          {link}
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-              
-              {/* Glow effect */}
-              <div className="absolute -inset-8 bg-primary/10 blur-[80px] -z-10 rounded-full" />
-            </div>
+            <PhoneMockup />
           </motion.div>
         </div>
       </motion.div>
