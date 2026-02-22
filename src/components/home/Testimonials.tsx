@@ -3,20 +3,35 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import avatarDakvan from "@/assets/testimonial-dakvan.jpg";
+import avatarSarah from "@/assets/testimonial-sarah.jpg";
+import avatarMarcus from "@/assets/testimonial-marcus.jpg";
+import avatarPriya from "@/assets/testimonial-priya.jpg";
+import avatarAlex from "@/assets/testimonial-alex.jpg";
+import avatarJordan from "@/assets/testimonial-jordan.jpg";
+
 const testimonials = [
+  {
+    name: "Dakvan",
+    handle: "@dakvan",
+    role: "Digital Creator · 1.8M followers",
+    avatar: avatarDakvan,
+    quote: "SmartCard completely transformed how I share my content. My link clicks went up 340% in the first month alone.",
+    rating: 5,
+  },
   {
     name: "Sarah Chen",
     handle: "@sarahcreates",
     role: "Content Creator · 2.4M followers",
-    avatar: "",
-    quote: "SmartCard completely transformed how I share my content. My link clicks went up 340% in the first month alone.",
+    avatar: avatarSarah,
+    quote: "The analytics alone are worth it. I finally understand what my audience actually clicks on.",
     rating: 5,
   },
   {
     name: "Marcus Williams",
     handle: "@marcusbeats",
     role: "Music Producer · Spotify Verified",
-    avatar: "",
+    avatar: avatarMarcus,
     quote: "Finally a link-in-bio that actually looks professional. The NFC cards are a game-changer for networking at events.",
     rating: 5,
   },
@@ -24,7 +39,7 @@ const testimonials = [
     name: "Priya Patel",
     handle: "@priyafitness",
     role: "Fitness Coach · 890K followers",
-    avatar: "",
+    avatar: avatarPriya,
     quote: "My clients love how easy it is to find everything in one place. Bookings increased by 60% since switching to SmartCard.",
     rating: 5,
   },
@@ -32,7 +47,7 @@ const testimonials = [
     name: "Alex Rivera",
     handle: "@alexdesigns",
     role: "UX Designer · Freelancer",
-    avatar: "",
+    avatar: avatarAlex,
     quote: "The customization options are unreal. My portfolio link page looks better than most actual websites I've designed.",
     rating: 5,
   },
@@ -40,7 +55,7 @@ const testimonials = [
     name: "Jordan Lee",
     handle: "@jordantalks",
     role: "Podcast Host · 500K listeners",
-    avatar: "",
+    avatar: avatarJordan,
     quote: "Went from 5 different links in my bio to one SmartCard. Listener engagement doubled overnight. Can't recommend it enough.",
     rating: 5,
   },
