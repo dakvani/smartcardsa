@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowLeft, Loader2, Shield, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Loader2, Shield, CheckCircle2, XCircle, Mail } from "lucide-react";
 import { useUsernameCheck } from "@/hooks/use-username-check";
 
 export default function Auth() {
@@ -20,6 +20,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const { isChecking: usernameChecking, isTaken: usernameTaken, suggestions: usernameSuggestions, hasChecked: usernameHasChecked } = useUsernameCheck(mode === "signup" ? username : "");
 
   useEffect(() => {
@@ -82,7 +83,7 @@ export default function Auth() {
             toast.error(error.message);
           }
         } else {
-          toast.success("Account created! You can now access your dashboard.");
+          setVerificationSent(true);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -212,7 +213,28 @@ export default function Auth() {
             </>
           )}
 
-          {mode === "forgot" && resetSent ? (
+          {verificationSent ? (
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h2 className="text-xl font-semibold">Verify your email</h2>
+              <p className="text-muted-foreground">
+                We've sent a verification link to <strong>{email}</strong>. Please check your inbox and click the link to activate your account.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Didn't receive it? Check your spam folder or try again.
+              </p>
+              <div className="flex gap-3 justify-center mt-4">
+                <Button variant="outline" onClick={() => { setVerificationSent(false); switchMode("login"); }}>
+                  Back to login
+                </Button>
+                <Button variant="outline" onClick={() => setVerificationSent(false)}>
+                  Try again
+                </Button>
+              </div>
+            </div>
+          ) : mode === "forgot" && resetSent ? (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
                 <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
