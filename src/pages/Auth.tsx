@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, ArrowLeft, Loader2, Shield, CheckCircle2, XCircle, Mail, AlertCircle } from "lucide-react";
 import { useUsernameCheck } from "@/hooks/use-username-check";
 import { VerificationSentScreen } from "@/components/auth/VerificationSentScreen";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -359,6 +360,7 @@ export default function Auth() {
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
+                  {mode === "signup" && <PasswordStrengthIndicator password={password} />}
                 </div>
               )}
 
