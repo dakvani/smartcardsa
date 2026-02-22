@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowLeft, Loader2, Shield, CheckCircle2, XCircle, Mail, AlertCircle } from "lucide-react";
 import { useUsernameCheck } from "@/hooks/use-username-check";
+import { VerificationSentScreen } from "@/components/auth/VerificationSentScreen";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -227,26 +228,13 @@ export default function Auth() {
           )}
 
           {verificationSent ? (
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                <Mail className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="text-xl font-semibold">Confirm your email to complete signup</h2>
-              <p className="text-muted-foreground">
-                We've sent a confirmation link to <strong>{email}</strong>. Open the link in your email to activate your SmartCard profile.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Your username <strong>{username}</strong> is reserved until you confirm. Check your spam folder if you don't see it.
-              </p>
-              <div className="flex gap-3 justify-center mt-4">
-                <Button variant="outline" onClick={() => { setVerificationSent(false); switchMode("login"); }}>
-                  Back to login
-                </Button>
-                <Button variant="outline" onClick={() => setVerificationSent(false)}>
-                  Try again
-                </Button>
-              </div>
-            </div>
+            <VerificationSentScreen
+              email={email}
+              username={username}
+              onBackToLogin={() => { setVerificationSent(false); switchMode("login"); }}
+              onTryAgain={() => setVerificationSent(false)}
+            />
+          
           ) : mode === "forgot" && resetSent ? (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
