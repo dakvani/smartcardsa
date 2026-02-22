@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowLeft, Loader2, Shield, CheckCircle2, XCircle, Mail } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Loader2, Shield, CheckCircle2, XCircle, Mail, AlertCircle } from "lucide-react";
 import { useUsernameCheck } from "@/hooks/use-username-check";
+import { z } from "zod";
+
+const emailSchema = z.string().email("Please enter a valid email address");
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -21,6 +24,7 @@ export default function Auth() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const { isChecking: usernameChecking, isTaken: usernameTaken, suggestions: usernameSuggestions, hasChecked: usernameHasChecked } = useUsernameCheck(mode === "signup" ? username : "");
 
   useEffect(() => {
@@ -46,6 +50,15 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Validate email before any action
+    const emailResult = emailSchema.safeParse(email.trim());
+    if (!emailResult.success) {
+      setEmailError(emailResult.error.errors[0].message);
+      toast.error("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+    setEmailError("");
 
     try {
       if (mode === "forgot") {
@@ -215,15 +228,15 @@ export default function Auth() {
 
           {verificationSent ? (
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <Mail className="w-8 h-8 text-green-600 dark:text-green-400" />
+              <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-xl font-semibold">Verify your email</h2>
+              <h2 className="text-xl font-semibold">Confirm your email to complete signup</h2>
               <p className="text-muted-foreground">
-                We've sent a verification link to <strong>{email}</strong>. Please check your inbox and click the link to activate your account.
+                We've sent a confirmation link to <strong>{email}</strong>. Open the link in your email to activate your SmartCard profile.
               </p>
               <p className="text-sm text-muted-foreground">
-                Didn't receive it? Check your spam folder or try again.
+                Your username <strong>{username}</strong> is reserved until you confirm. Check your spam folder if you don't see it.
               </p>
               <div className="flex gap-3 justify-center mt-4">
                 <Button variant="outline" onClick={() => { setVerificationSent(false); switchMode("login"); }}>
@@ -313,11 +326,17 @@ export default function Auth() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
                   placeholder="you@example.com"
-                  className="w-full h-12 px-4 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  className={`w-full h-12 px-4 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring ${emailError ? 'border-destructive' : 'border-input'}`}
                   required
                 />
+                {emailError && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>{emailError}</span>
+                  </div>
+                )}
               </div>
 
               {mode !== "forgot" && (
