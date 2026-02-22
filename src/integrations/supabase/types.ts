@@ -221,6 +221,7 @@ export type Database = {
           created_at: string
           id: string
           items: Json
+          notes: string | null
           order_number: string
           shipping_cost: number
           shipping_info: Json
@@ -234,6 +235,7 @@ export type Database = {
           created_at?: string
           id?: string
           items?: Json
+          notes?: string | null
           order_number: string
           shipping_cost?: number
           shipping_info?: Json
@@ -247,6 +249,7 @@ export type Database = {
           created_at?: string
           id?: string
           items?: Json
+          notes?: string | null
           order_number?: string
           shipping_cost?: number
           shipping_info?: Json

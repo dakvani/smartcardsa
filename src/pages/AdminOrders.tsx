@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Package, Clock, CheckCircle, Truck, XCircle, Shield, Mail, Loader2, RefreshCw } from "lucide-react";
+import { Package, Clock, CheckCircle, Truck, XCircle, Shield, Mail, Loader2, RefreshCw, Save } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OrderItem {
   product: {
@@ -41,19 +42,21 @@ interface Order {
   subtotal: number;
   shipping_cost: number;
   total: number;
+  notes: string;
   created_at: string;
   updated_at: string;
 }
 
 const statusConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
   pending: { icon: Clock, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20", label: "Pending" },
+  confirmed: { icon: CheckCircle, color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20", label: "Confirmed" },
   processing: { icon: Package, color: "bg-blue-500/10 text-blue-600 border-blue-500/20", label: "Processing" },
   shipped: { icon: Truck, color: "bg-purple-500/10 text-purple-600 border-purple-500/20", label: "Shipped" },
   delivered: { icon: CheckCircle, color: "bg-green-500/10 text-green-600 border-green-500/20", label: "Delivered" },
   cancelled: { icon: XCircle, color: "bg-red-500/10 text-red-600 border-red-500/20", label: "Cancelled" },
 };
 
-const statusOptions = ["pending", "processing", "shipped", "delivered", "cancelled"];
+const statusOptions = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
 
 export default function AdminOrders() {
   const navigate = useNavigate();
@@ -63,6 +66,8 @@ export default function AdminOrders() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
+  const [savingNotes, setSavingNotes] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminAndLoadOrders();
@@ -141,7 +146,7 @@ export default function AdminOrders() {
       if (updateError) throw updateError;
 
       // Send email notification for status changes
-      if (["processing", "shipped", "delivered"].includes(newStatus)) {
+      if (["confirmed", "processing", "shipped", "delivered"].includes(newStatus)) {
         try {
           const { error: emailError } = await supabase.functions.invoke("send-order-email", {
             body: {
@@ -178,6 +183,23 @@ export default function AdminOrders() {
       });
     } finally {
       setUpdatingOrder(null);
+    }
+  };
+
+  const handleSaveNotes = async (orderId: string) => {
+    setSavingNotes(orderId);
+    try {
+      const { error } = await supabase
+        .from("nfc_orders")
+        .update({ notes: orderNotes[orderId] ?? "" })
+        .eq("id", orderId);
+      if (error) throw error;
+      setOrders(orders.map(o => o.id === orderId ? { ...o, notes: orderNotes[orderId] ?? "" } : o));
+      toast({ title: "Notes saved", description: "Order notes updated successfully." });
+    } catch {
+      toast({ title: "Error", description: "Failed to save notes.", variant: "destructive" });
+    } finally {
+      setSavingNotes(null);
     }
   };
 
@@ -335,7 +357,7 @@ export default function AdminOrders() {
                       </div>
 
                       {/* Email notification indicator */}
-                      {["processing", "shipped", "delivered"].includes(order.status) && (
+                      {["confirmed", "processing", "shipped", "delivered"].includes(order.status) && (
                         <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                           <Mail className="w-4 h-4" />
                           <span>Email notification sent for "{statusConfig[order.status].label}" status</span>
@@ -381,6 +403,26 @@ export default function AdminOrders() {
                                 </div>
                               ))}
                             </div>
+                          </div>
+
+                          {/* Notes */}
+                          <div className="md:col-span-2">
+                            <h4 className="font-medium mb-2">Notes</h4>
+                            <Textarea
+                              placeholder="Add notes about this order (e.g. customer requests, updates)..."
+                              value={orderNotes[order.id] ?? order.notes ?? ""}
+                              onChange={(e) => setOrderNotes(prev => ({ ...prev, [order.id]: e.target.value }))}
+                              className="min-h-[80px]"
+                            />
+                            <Button
+                              size="sm"
+                              className="mt-2"
+                              onClick={() => handleSaveNotes(order.id)}
+                              disabled={savingNotes === order.id}
+                            >
+                              {savingNotes === order.id ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                              Save Notes
+                            </Button>
                           </div>
 
                           {/* Shipping Info */}
