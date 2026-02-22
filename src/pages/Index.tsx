@@ -4,6 +4,7 @@ import { Hero } from "@/components/home/Hero";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { Features } from "@/components/home/Features";
 import { CTA } from "@/components/home/CTA";
+import { Testimonials } from "@/components/home/Testimonials";
 
 const Index = () => {
   return (
@@ -11,6 +12,7 @@ const Index = () => {
       <Navbar />
       <main id="main-content" className="flex-1">
         <Hero />
+        <Testimonials />
         <HowItWorks />
         <Features />
         <CTA />
