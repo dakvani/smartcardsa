@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Package, Clock, CheckCircle, Truck, XCircle, Shield, Mail, Loader2, RefreshCw, Save } from "lucide-react";
+import { Package, Clock, CheckCircle, Truck, XCircle, Shield, Mail, Loader2, RefreshCw, Save, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 
 interface OrderItem {
   product: {
@@ -68,6 +69,17 @@ export default function AdminOrders() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [orderNotes, setOrderNotes] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = searchQuery === "" || 
+      order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.shipping_info.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.shipping_info.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   useEffect(() => {
     checkAdminAndLoadOrders();
@@ -268,27 +280,57 @@ export default function AdminOrders() {
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
-              <Badge variant="outline" className="text-muted-foreground">
-                {orders.length} total orders
+            <Badge variant="outline" className="text-muted-foreground">
+                {filteredOrders.length} of {orders.length} orders
               </Badge>
+            </div>
+
+            {/* Search & Filter */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by order #, name, or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Filter status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {statusOptions.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {statusConfig[status].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </motion.div>
 
-          {orders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-16"
             >
               <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-xl font-semibold mb-2">No orders yet</h2>
+              <h2 className="text-xl font-semibold mb-2">
+                {orders.length === 0 ? "No orders yet" : "No matching orders"}
+              </h2>
               <p className="text-muted-foreground">
-                Orders will appear here when customers place them.
+                {orders.length === 0 
+                  ? "Orders will appear here when customers place them."
+                  : "Try adjusting your search or filter."}
               </p>
             </motion.div>
           ) : (
             <div className="space-y-4">
-              {orders.map((order, index) => {
+              {filteredOrders.map((order, index) => {
                 const statusInfo = getStatusInfo(order.status);
                 const StatusIcon = statusInfo.icon;
                 const isExpanded = expandedOrder === order.id;
