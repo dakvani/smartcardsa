@@ -30,6 +30,7 @@ import { AnalyticsCharts } from "@/components/dashboard/AnalyticsCharts";
 import { AnimatedBackground } from "@/components/profile/AnimatedBackground";
 import { ThemeCustomizer } from "@/components/dashboard/ThemeCustomizer";
 import { QRCodeGenerator } from "@/components/dashboard/QRCodeGenerator";
+import { ProfileShareCard } from "@/components/dashboard/ProfileShareCard";
 import { EmailSubscribers } from "@/components/dashboard/EmailSubscribers";
 import { ProfileTemplates } from "@/components/dashboard/ProfileTemplates";
 import { LinkGroupManager, LinkGroup } from "@/components/dashboard/LinkGroupManager";
@@ -438,6 +439,9 @@ export default function Dashboard() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Profile Share Card - Prominent at top */}
+        <ProfileShareCard username={profile.username} />
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Editor Panel */}
           <div className="flex-1 lg:w-[60%]">
