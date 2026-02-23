@@ -1,25 +1,15 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Shield, ExternalLink } from "lucide-react";
-
-function isInIframe(): boolean {
-  try {
-    return window.self !== window.top;
-  } catch {
-    return true;
-  }
-}
+import { ArrowLeft, Loader2, Shield } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
-  const inIframe = useMemo(() => isInIframe(), []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -39,45 +29,23 @@ export default function Auth() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleGoogleLogin = async () => {
-    if (inIframe) {
-      window.open(`${window.location.origin}/auth`, "_blank", "noopener,noreferrer");
-      toast.info("Complete sign-in in the new tab that just opened.");
-      return;
-    }
-    setGoogleLoading(true);
+  const handleOAuthLogin = async (provider: "google" | "apple") => {
+    const setLoading = provider === "google" ? setGoogleLoading : setAppleLoading;
+    setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
       });
-      if (result?.error) {
-        toast.error(result.error.message || "Failed to sign in with Google");
+      if (error) {
+        toast.error(error.message);
       }
     } catch {
-      toast.error("Failed to sign in with Google");
+      toast.error(`Failed to sign in with ${provider === "google" ? "Google" : "Apple"}`);
     } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    if (inIframe) {
-      window.open(`${window.location.origin}/auth`, "_blank", "noopener,noreferrer");
-      toast.info("Complete sign-in in the new tab that just opened.");
-      return;
-    }
-    setAppleLoading(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("apple", {
-        redirect_uri: window.location.origin,
-      });
-      if (result?.error) {
-        toast.error(result.error.message || "Failed to sign in with Apple");
-      }
-    } catch {
-      toast.error("Failed to sign in with Apple");
-    } finally {
-      setAppleLoading(false);
+      setLoading(false);
     }
   };
 
@@ -107,25 +75,13 @@ export default function Auth() {
             Sign in or create your account instantly using your social profile. No passwords needed.
           </p>
 
-          {inIframe && (
-            <a
-              href={window.location.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full mb-4 px-4 py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open in new tab for best experience
-            </a>
-          )}
-
           <div className="space-y-3">
             {/* Google */}
             <Button
               type="button"
               variant="outline"
               className="w-full h-14 text-[15px] font-medium rounded-xl border-border/60 hover:border-foreground/20 hover:bg-accent/50 transition-all"
-              onClick={handleGoogleLogin}
+              onClick={() => handleOAuthLogin("google")}
               disabled={googleLoading || appleLoading}
             >
               {googleLoading ? (
@@ -146,7 +102,7 @@ export default function Auth() {
               type="button"
               variant="outline"
               className="w-full h-14 text-[15px] font-medium rounded-xl border-border/60 hover:border-foreground/20 hover:bg-accent/50 transition-all"
-              onClick={handleAppleLogin}
+              onClick={() => handleOAuthLogin("apple")}
               disabled={googleLoading || appleLoading}
             >
               {appleLoading ? (
