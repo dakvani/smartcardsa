@@ -47,6 +47,7 @@ export function AnimatedRoutes() {
           <Route path="/learn" element={<PageTransition><Learn /></PageTransition>} />
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
           <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
+          <Route path="/~oauth/*" element={null} />
           <Route path="/:username" element={<PageTransition><PublicProfile /></PageTransition>} />
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>
