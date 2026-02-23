@@ -1,16 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Shield } from "lucide-react";
+import { ArrowLeft, Loader2, Shield, ExternalLink } from "lucide-react";
+
+function isInIframe(): boolean {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
 
 export default function Auth() {
   const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const inIframe = useMemo(() => isInIframe(), []);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -31,13 +40,18 @@ export default function Auth() {
   }, [navigate]);
 
   const handleGoogleLogin = async () => {
+    if (inIframe) {
+      window.open(`${window.location.origin}/auth`, "_blank", "noopener,noreferrer");
+      toast.info("Complete sign-in in the new tab that just opened.");
+      return;
+    }
     setGoogleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
       if (result?.error) {
-        toast.error("Failed to sign in with Google");
+        toast.error(result.error.message || "Failed to sign in with Google");
       }
     } catch {
       toast.error("Failed to sign in with Google");
@@ -47,13 +61,18 @@ export default function Auth() {
   };
 
   const handleAppleLogin = async () => {
+    if (inIframe) {
+      window.open(`${window.location.origin}/auth`, "_blank", "noopener,noreferrer");
+      toast.info("Complete sign-in in the new tab that just opened.");
+      return;
+    }
     setAppleLoading(true);
     try {
       const result = await lovable.auth.signInWithOAuth("apple", {
         redirect_uri: window.location.origin,
       });
       if (result?.error) {
-        toast.error("Failed to sign in with Apple");
+        toast.error(result.error.message || "Failed to sign in with Apple");
       }
     } catch {
       toast.error("Failed to sign in with Apple");
@@ -87,6 +106,18 @@ export default function Auth() {
           <p className="text-muted-foreground mb-10 text-[15px] leading-relaxed">
             Sign in or create your account instantly using your social profile. No passwords needed.
           </p>
+
+          {inIframe && (
+            <a
+              href={window.location.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full mb-4 px-4 py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open in new tab for best experience
+            </a>
+          )}
 
           <div className="space-y-3">
             {/* Google */}
