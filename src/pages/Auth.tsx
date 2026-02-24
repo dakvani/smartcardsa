@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Shield } from "lucide-react";
 
@@ -33,14 +34,11 @@ export default function Auth() {
     const setLoading = provider === "google" ? setGoogleLoading : setAppleLoading;
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
+      const { error } = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
       });
       if (error) {
-        toast.error(error.message);
+        toast.error(error.message || `Failed to sign in with ${provider === "google" ? "Google" : "Apple"}`);
       }
     } catch {
       toast.error(`Failed to sign in with ${provider === "google" ? "Google" : "Apple"}`);
@@ -179,3 +177,4 @@ export default function Auth() {
     </div>
   );
 }
+
