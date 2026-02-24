@@ -7,6 +7,14 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Shield } from "lucide-react";
 
+function isInIframe() {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
 export default function Auth() {
   const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -14,14 +22,24 @@ export default function Auth() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Session check failed:", error);
       }
     };
+
     checkUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         navigate("/dashboard");
       }
@@ -32,16 +50,33 @@ export default function Auth() {
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     const setLoading = provider === "google" ? setGoogleLoading : setAppleLoading;
+    const providerLabel = provider === "google" ? "Google" : "Apple";
+
     setLoading(true);
+
     try {
+      if (isInIframe()) {
+        const authTab = window.open(`${window.location.origin}/auth`, "_blank", "noopener,noreferrer");
+
+        if (!authTab) {
+          toast.error(`Please allow popups to continue with ${providerLabel}`);
+          return;
+        }
+
+        toast.info(`Continue with ${providerLabel} in the new tab`);
+        return;
+      }
+
       const { error } = await lovable.auth.signInWithOAuth(provider, {
         redirect_uri: window.location.origin,
       });
+
       if (error) {
-        toast.error(error.message || `Failed to sign in with ${provider === "google" ? "Google" : "Apple"}`);
+        toast.error(error.message || `Failed to sign in with ${providerLabel}`);
       }
-    } catch {
-      toast.error(`Failed to sign in with ${provider === "google" ? "Google" : "Apple"}`);
+    } catch (error) {
+      console.error(`${providerLabel} sign-in failed:`, error);
+      toast.error(`Failed to sign in with ${providerLabel}`);
     } finally {
       setLoading(false);
     }

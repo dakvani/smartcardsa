@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "./PageTransition";
 import { ScrollToTop } from "./ScrollToTop";
@@ -47,7 +47,7 @@ export function AnimatedRoutes() {
           <Route path="/learn" element={<PageTransition><Learn /></PageTransition>} />
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
           <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
-          <Route path="/~oauth/*" element={null} />
+          <Route path="/~oauth/*" element={<Navigate to="/auth" replace />} />
           <Route path="/:username" element={<PageTransition><PublicProfile /></PageTransition>} />
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>
