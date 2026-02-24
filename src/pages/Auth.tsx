@@ -48,24 +48,46 @@ export default function Auth() {
 
     try {
       if (isLovableDomain()) {
-        // Use Lovable managed OAuth (works on *.lovable.app / *.lovableproject.com)
         const { error } = await lovable.auth.signInWithOAuth(provider, {
           redirect_uri: window.location.origin,
         });
+
         if (error) {
           toast.error(error.message || `Failed to sign in with ${providerLabel}`);
         }
-      } else {
-        // Direct Supabase OAuth for Vercel / custom domains
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider,
-          options: {
-            redirectTo: `${window.location.origin}/dashboard`,
-          },
-        });
-        if (error) {
-          toast.error(error.message);
+
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) {
+        const normalizedMessage = error.message.toLowerCase();
+
+        if (normalizedMessage.includes("missing oauth secret")) {
+          toast.error(`${providerLabel} sign-in is not configured in backend auth settings yet.`);
+          return;
         }
+
+        toast.error(error.message);
+        return;
+      }
+
+      if (data?.url) {
+        const popup = window.open(data.url, "_blank", "noopener,noreferrer");
+
+        if (!popup) {
+          window.location.href = data.url;
+          return;
+        }
+
+        toast.info(`Continue with ${providerLabel} in the opened tab`);
       }
     } catch (error) {
       console.error(`${providerLabel} sign-in failed:`, error);
