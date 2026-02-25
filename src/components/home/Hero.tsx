@@ -29,7 +29,7 @@ export function Hero() {
     setFormStatus("success");
     
     setTimeout(() => {
-      navigate(`/auth?signup=true&username=${encodeURIComponent(username.trim())}`);
+      navigate(`/signup?username=${encodeURIComponent(username.trim())}`);
     }, 600);
   };
 

@@ -280,12 +280,12 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/auth" aria-label="Log in to your account">
+              <Link to="/login" aria-label="Log in to your account">
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
                   Log in
                 </Button>
               </Link>
-              <Link to="/auth?signup=true" aria-label="Sign up for a free account">
+              <Link to="/signup" aria-label="Sign up for a free account">
                 <Button variant="gradient" size="sm" className="shadow-glow">
                   Sign up free
                 </Button>
@@ -401,12 +401,12 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link to="/auth" onClick={() => setMobileOpen(false)}>
+                  <Link to="/login" onClick={() => setMobileOpen(false)}>
                     <Button variant="outline" className="w-full border-border/50" aria-label="Log in to your account">
                       Log in
                     </Button>
                   </Link>
-                  <Link to="/auth?signup=true" onClick={() => setMobileOpen(false)}>
+                  <Link to="/signup" onClick={() => setMobileOpen(false)}>
                     <Button variant="gradient" className="w-full shadow-glow" aria-label="Sign up for a free account">
                       Sign up free
                     </Button>

@@ -65,7 +65,7 @@ export function CTA() {
               Join millions of creators who trust SmartCard to connect with their audience.
             </p>
             <div className="flex flex-col sm:flex-row items-start gap-4">
-              <Link to="/auth?signup=true">
+              <Link to="/signup">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
                   <Button variant="hero" size="xl" className="glass-heavy border-primary/30 hover:border-primary/50 shadow-glow">
                     Get started for free
