@@ -7,6 +7,8 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { BackToTopButton } from "./BackToTopButton";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
 import ResetPassword from "@/pages/ResetPassword";
 import AdminLogin from "@/pages/AdminLogin";
 import Pricing from "@/pages/Pricing";
@@ -36,6 +38,8 @@ export function AnimatedRoutes() {
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<PageTransition><Index /></PageTransition>} />
           <Route path="/auth" element={<PageTransition><Auth /></PageTransition>} />
+          <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+          <Route path="/signup" element={<PageTransition><Signup /></PageTransition>} />
           <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
           <Route path="/admin-login" element={<PageTransition><AdminLogin /></PageTransition>} />
           <Route path="/pricing" element={<PageTransition><Pricing /></PageTransition>} />
@@ -49,7 +53,7 @@ export function AnimatedRoutes() {
           <Route path="/learn" element={<PageTransition><Learn /></PageTransition>} />
           <Route path="/dashboard" element={<PageTransition><Dashboard /></PageTransition>} />
           <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
-          <Route path="/~oauth/*" element={<Navigate to="/auth" replace />} />
+          <Route path="/~oauth/*" element={<Navigate to="/login" replace />} />
           <Route path="/:username" element={<PageTransition><PublicProfile /></PageTransition>} />
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>
