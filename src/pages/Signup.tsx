@@ -1,18 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Rocket, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { EmailAuthForm } from "@/components/auth/EmailAuthForm";
+import { SignupVisual } from "@/components/auth/SignupVisual";
 
-const benefits = [
-  "One link for all your content",
-  "Beautiful customizable themes",
-  "Detailed click analytics",
-  "NFC smart card support",
-  "Free forever plan",
-];
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -39,65 +33,7 @@ export default function Signup() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Visual */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden">
-        {/* Gradient background - different from login */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-600 to-primary" />
-        
-        {/* Animated orbs */}
-        <motion.div
-          animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 1.15, 1] }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-16 left-16 w-64 h-64 rounded-full bg-emerald-300/20 blur-3xl"
-        />
-        <motion.div
-          animate={{ x: [0, 20, 0], y: [0, -30, 0], scale: [1.1, 0.9, 1.1] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-16 right-16 w-96 h-96 rounded-full bg-teal-300/15 blur-3xl"
-        />
-
-        {/* Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
-          className="relative z-10 px-12 max-w-md"
-        >
-          <motion.div
-            animate={{ y: [-5, 5, -5] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="w-20 h-20 mb-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center"
-          >
-            <Rocket className="w-10 h-10 text-white/80" />
-          </motion.div>
-
-          <h2 className="text-3xl font-bold text-white mb-3">
-            Launch your
-            <br />
-            <span className="text-white/70">digital identity</span>
-          </h2>
-          <p className="text-white/50 text-sm leading-relaxed mb-10">
-            Join millions of creators who share everything they create, curate, and sell with one simple link.
-          </p>
-
-          {/* Benefits list */}
-          <div className="space-y-4">
-            {benefits.map((benefit, i) => (
-              <motion.div
-                key={benefit}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
-                className="flex items-center gap-3"
-              >
-                <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0">
-                  <Check className="w-3.5 h-3.5 text-white" />
-                </div>
-                <span className="text-white/70 text-sm">{benefit}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
+      <SignupVisual />
 
       {/* Right Panel - Signup Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-10 relative bg-background">
