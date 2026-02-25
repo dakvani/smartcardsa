@@ -1,14 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-
-function isLovableDomain(): boolean {
-  const host = window.location.hostname;
-  return host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com");
-}
 
 export function SocialAuthButtons() {
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -21,21 +15,10 @@ export function SocialAuthButtons() {
     setLoading(true);
 
     try {
-      if (isLovableDomain()) {
-        const { error } = await lovable.auth.signInWithOAuth(provider, {
-          redirect_uri: window.location.origin,
-        });
-        if (error) {
-          toast.error(error.message || `Failed to sign in with ${providerLabel}`);
-        }
-        return;
-      }
-
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
-          skipBrowserRedirect: true,
         },
       });
 
@@ -49,12 +32,7 @@ export function SocialAuthButtons() {
       }
 
       if (data?.url) {
-        const popup = window.open(data.url, "_blank", "noopener,noreferrer");
-        if (!popup) {
-          window.location.href = data.url;
-          return;
-        }
-        toast.info(`Continue with ${providerLabel} in the opened tab`);
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error(`${providerLabel} sign-in failed:`, error);
